@@ -20,5 +20,6 @@ interface Window {
     importRunbook: () => Promise<{ success: boolean; error?: string }>;
     startAutoDownload: () => Promise<void>;
     startManualDownload: (url: string) => Promise<void>;
+    getAppVersion: () => Promise<string>;
   }
 }

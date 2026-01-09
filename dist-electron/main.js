@@ -1,4 +1,4 @@
-import require$$1$3, { app, BrowserWindow, ipcMain, dialog } from "electron";
+import require$$1$3, { app, BrowserWindow, ipcMain, dialog, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import fs$1 from "node:fs";
@@ -13648,6 +13648,12 @@ ipcMain.handle("check-for-updates", () => {
   }
   mainExports.autoUpdater.checkForUpdates();
 });
+ipcMain.handle("start-auto-download", () => {
+  log.info("User requested Auto-Update. Starting download..."), mainExports.autoUpdater.downloadUpdate();
+});
+ipcMain.handle("start-manual-download", (i, f) => {
+  log.info("User requested Manual Update. Opening URL:", f), shell.openExternal(f);
+});
 ipcMain.handle("quit-and-install", () => {
   mainExports.autoUpdater.quitAndInstall();
 });
@@ -13655,7 +13661,7 @@ mainExports.autoUpdater.on("checking-for-update", () => {
   log.info("Checking for update...");
 });
 mainExports.autoUpdater.on("update-available", (i) => {
-  log.info("Update available:", i), win?.webContents.send("update-available", i), mainExports.autoUpdater.downloadUpdate();
+  log.info("Update available:", i), win?.webContents.send("update-available", i);
 });
 mainExports.autoUpdater.on("update-not-available", (i) => {
   log.info("Update not available:", i), win?.webContents.send("update-not-available", i);

@@ -30,6 +30,14 @@ export const QRunList: React.FC = () => {
   const [updateStatus, setUpdateStatus] = useState<string | null>(null); // 'available', 'downloading', 'ready', 'error'
   const [updateInfo, setUpdateInfo] = useState<any>(null);
 
+    const [appVersion, setAppVersion] = useState<string>('');
+
+    React.useEffect(() => {
+        if (window.electronAPI) {
+            window.electronAPI.getAppVersion().then(v => setAppVersion(v));
+        }
+    }, []);
+
   // -- Load Data --
   const loadRunbooks = async () => {
     if (window.electronAPI) {
@@ -302,7 +310,10 @@ export const QRunList: React.FC = () => {
 
             <div className="sidebar-footer">
                 <div className="copyright">
-                    <div>Copyright © 2026 Quick Runbooks</div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
+                        <span>© 2026 Quick Runbooks</span>
+                        <span className="text-tertiary" style={{fontSize: '0.8em'}}>v{appVersion}</span>
+                    </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <button 
                             className="btn-link text-tertiary" 

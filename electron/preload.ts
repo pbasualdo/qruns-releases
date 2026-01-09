@@ -19,4 +19,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   importRunbook: () => ipcRenderer.invoke('import-file'),
   startAutoDownload: () => ipcRenderer.invoke('start-auto-download'),
   startManualDownload: (url: string) => ipcRenderer.invoke('start-manual-download', url),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
 })

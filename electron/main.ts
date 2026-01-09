@@ -599,18 +599,27 @@ ipcMain.handle('download-template', async (_, format: 'json' | 'md') => {
         const content = format === 'md' ? TEMPLATE_MD : TEMPLATE_JSON;
 
         const { filePath } = await dialog.showSaveDialog(win, {
+            title: 'Download Template',
             defaultPath: defaultName,
-            filters: [{ name: format.toUpperCase(), extensions: [format] }]
+            filters: [
+                { name: format === 'md' ? 'Markdown' : 'JSON', extensions: [format] }
+            ]
         });
 
         if (filePath) {
             fs.writeFileSync(filePath, content, 'utf-8');
             return { success: true };
+        } else {
+             return { success: false, error: "Cancelled" };
         }
-        return { success: false, error: "Canceled" };
     } catch (e) {
         return { success: false, error: (e as Error).message };
     }
+});
+
+// Expose app version
+ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
 });
 
 ipcMain.handle('import-file', async () => {
