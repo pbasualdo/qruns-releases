@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.12] - 2026-01-09
+
+### Security
+- **IPC**: Added strict validation for Git Clone URLs to prevent command injection.
+- **IPC**: Restricted manual download links to HTTPS only.
+- **Electron**: Explicitly configured security defaults (Context Isolation).
+
 ## [1.3.11] - 2026-01-09
 
 ### Fixed

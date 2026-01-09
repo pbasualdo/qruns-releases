@@ -28,6 +28,9 @@ function createWindow() {
     icon: path.join(process.env.VITE_PUBLIC || '', 'electron-vite.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false // Required for some Node APIs if used, but false is safer if possible. Keeping false as per current config check.
     },
   })
 
@@ -401,6 +404,13 @@ ipcMain.handle('delete-runbook', async (_, runbook) => {
 ipcMain.handle('clone-repository', async (_, url, options = {}) => {
     try {
         if (!url) return { success: false, error: "URL is required" };
+        
+        // SECURITY: Validate URL to prevent command injection
+        // Allow only https/http, alphanumeric, dot, underscore, hyphen
+        if (!/^https?:\/\/[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+(\.git)?$/.test(url)) {
+             return { success: false, error: "Invalid Repository URL. Access denied." };
+        }
+
         const { interactive } = options;
         
         // Derive folder name from URL (e.g., https://github.com/foo/bar.git -> bar)
@@ -513,6 +523,11 @@ ipcMain.handle('start-auto-download', () => {
 });
 
 ipcMain.handle('start-manual-download', (event, url) => {
+    // SECURITY: Only allow HTTPS protocol
+    if (!url || !url.startsWith('https://')) {
+        log.warn('Blocked unsafe manual download URL:', url);
+        return; 
+    }
     log.info('User requested Manual Update. Opening URL:', url);
     shell.openExternal(url);
 });
