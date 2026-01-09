@@ -38,17 +38,26 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                         {activeTab === 'markdown' && (
                             <div className="help-section">
                                 <h3>Markdown Format (.md)</h3>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <button 
+                                        className="btn btn-secondary btn-small"
+                                        onClick={() => window.electronAPI?.downloadTemplate('md')}
+                                    >
+                                        Download Template (.md)
+                                    </button>
+                                </div>
                                 <p>Markdown files are the easiest way to write runbooks. They use YAML Frontmatter for metadata and standard headers for steps.</p>
                                 
                                 <div className="code-snippet">
 <pre>{`---
 title: Restart Application Service
 id: restart-app-service
-category: Operations
+service: IAAS
+category: Compute
 tags: [service, restart, production]
 shortDescription: Safely restarts the main web service.
 fullDescription: This runbook details the procedure to restart the web service with zero downtime.
-type: alert
+type: qrun
 ---
 
 ## Stop Load Balancer Traffic
@@ -89,16 +98,25 @@ curl -I http://localhost:8080/health
                         {activeTab === 'json' && (
                             <div className="help-section">
                                 <h3>JSON Format (.json)</h3>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <button 
+                                        className="btn btn-secondary btn-small"
+                                        onClick={() => window.electronAPI?.downloadTemplate('json')}
+                                    >
+                                        Download Template (.json)
+                                    </button>
+                                </div>
                                 <p>JSON provides a strict structure, useful if you are generating runbooks programmatically.</p>
                                 <div className="code-snippet">
 <pre>{`{
   "id": "db-backup-manual",
   "title": "Manual Database Backup",
+  "service": "IAAS",
   "category": "Database",
   "tags": ["sql", "backup"],
   "shortDescription": "Trigger a manual backup",
   "fullDescription": "Triggers a full backup of the primary SQL instance",
-  "type": "database",
+  "type": "qrun",
   "steps": [
     {
       "title": "Connect to Database",

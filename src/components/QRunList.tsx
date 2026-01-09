@@ -239,7 +239,19 @@ export const QRunList: React.FC = () => {
                   <button className={`filter-btn ${activeFilter === 'ALL' ? 'active' : ''}`} onClick={() => setActiveFilter('ALL')}>ALL</button>
                   <button className={`filter-btn ${activeFilter === 'IAAS' ? 'active' : ''}`} onClick={() => setActiveFilter('IAAS')}>IAAS</button>
                   <button className={`filter-btn ${activeFilter === 'PAAS' ? 'active' : ''}`} onClick={() => setActiveFilter('PAAS')}>PAAS</button>
-                  <button className="filter-btn create-btn" onClick={handleCreate}>+</button>
+                  <button className="filter-btn create-btn" onClick={handleCreate} title="Create New">+</button>
+                  <button 
+                    className="filter-btn" 
+                    title="Import Runbook"
+                    onClick={async () => {
+                        if (window.electronAPI) {
+                            await window.electronAPI.importRunbook();
+                            await loadRunbooks();
+                        }
+                    }}
+                  >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                  </button>
                </div>
                {/* Tag Cloud */}
                {uniqueTags.length > 0 && (

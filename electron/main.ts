@@ -535,3 +535,96 @@ autoUpdater.on('update-downloaded', (info) => {
 });
 
 app.whenReady().then(createWindow)
+
+// --- Templates & Import ---
+
+const TEMPLATE_MD = `---
+title: New Runbook
+id: new-runbook
+service: IAAS
+category: Compute
+tags: [tag1, tag2]
+shortDescription: A short description.
+fullDescription: A full description.
+type: qrun
+---
+
+## Step 1
+
+Content here.
+`;
+
+const TEMPLATE_JSON = `{
+  "id": "new-runbook",
+  "title": "New Runbook",
+  "service": "IAAS",
+  "category": "Compute",
+  "tags": ["tag1", "tag2"],
+  "shortDescription": "A short description.",
+  "fullDescription": "A full description.",
+  "type": "qrun",
+  "steps": [
+     {
+       "title": "Step 1",
+       "content": [
+         { "type": "text", "text": "Content here" }
+       ]
+     }
+  ]
+}`;
+
+ipcMain.handle('download-template', async (_, format: 'json' | 'md') => {
+    if (!win) return { success: false, error: "No window" };
+    
+    try {
+        const defaultName = format === 'md' ? 'template.md' : 'template.json';
+        const content = format === 'md' ? TEMPLATE_MD : TEMPLATE_JSON;
+
+        const { filePath } = await dialog.showSaveDialog(win, {
+            defaultPath: defaultName,
+            filters: [{ name: format.toUpperCase(), extensions: [format] }]
+        });
+
+        if (filePath) {
+            fs.writeFileSync(filePath, content, 'utf-8');
+            return { success: true };
+        }
+        return { success: false, error: "Canceled" };
+    } catch (e) {
+        return { success: false, error: (e as Error).message };
+    }
+});
+
+ipcMain.handle('import-file', async () => {
+    if (!win) return { success: false, error: "No window" };
+    
+    try {
+        const { filePaths } = await dialog.showOpenDialog(win, {
+            filters: [{ name: 'Runbooks', extensions: ['json', 'md'] }],
+            properties: ['openFile']
+        });
+
+        if (filePaths && filePaths.length > 0) {
+            const srcFile = filePaths[0];
+            const config = getConfig();
+            const targetDir = config.sources[0]; // Default to first source
+            
+            // Validate target exists
+            if (!fs.existsSync(targetDir)) {
+                 fs.mkdirSync(targetDir, { recursive: true });
+            }
+
+            const fileName = path.basename(srcFile);
+            const targetFile = path.join(targetDir, fileName);
+
+            // Prevent overwrite/collision? For now, we overwrite or duplicate.
+            // Let's copy.
+            fs.copyFileSync(srcFile, targetFile);
+            
+            return { success: true };
+        }
+        return { success: false, error: "Canceled" };
+    } catch (e) {
+        return { success: false, error: (e as Error).message };
+    }
+});
