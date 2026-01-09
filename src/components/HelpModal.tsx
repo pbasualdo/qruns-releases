@@ -8,6 +8,13 @@ interface HelpModalProps {
 
 export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
     const [activeTab, setActiveTab] = useState<'intro' | 'markdown' | 'json' | 'sources' | 'about'>('intro');
+    const [appVersion, setAppVersion] = useState<string>('');
+
+    React.useEffect(() => {
+        if (window.electronAPI) {
+            window.electronAPI.getAppVersion().then(v => setAppVersion(v));
+        }
+    }, []);
 
     if (!isOpen) return null;
 
@@ -160,10 +167,10 @@ curl -I http://localhost:8080/health
                                 <h3>About Quick Runbooks</h3>
                                 <div className="about-card" style={{ padding: '1rem', background: 'var(--bg-tertiary)', borderRadius: '8px', marginTop: '1rem' }}>
                                     <p style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Quick Runbooks</p>
-                                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>v0.0.0</p>
+                                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>v{appVersion || '...'}</p>
                                     <p>A modern, efficient runbook executor for operations teams.</p>
                                     <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
-                                    <p><strong>Created by:</strong> Me</p>
+                                    <p><strong>Created by:</strong> Pablo E. Basualdo</p>
                                     <p><strong>License:</strong> Private</p>
                                     <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-tertiary)' }}>
                                         Built with React, Vite, and Electron.
