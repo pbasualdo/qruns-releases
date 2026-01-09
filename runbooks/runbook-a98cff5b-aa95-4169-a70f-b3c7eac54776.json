@@ -1,0 +1,34 @@
+{
+  "id": "a98cff5b-aa95-4169-a70f-b3c7eac54776",
+  "title": "[IAAS] SQL TempDB Contention",
+  "category": "IAAS",
+  "type": "database",
+  "shortDescription": "Diagnose and resolve PAGELATCH_UP waits in TempDB.",
+  "fullDescription": "Heavy allocation/deallocation in TempDB causing contention on allocation bitmaps.",
+  "tags": [
+    "SQL",
+    "TempDB",
+    "Contention"
+  ],
+  "steps": [
+    {
+      "title": "Check Waits",
+      "content": [
+        {
+          "type": "code",
+          "language": "sql",
+          "code": "SELECT * FROM sys.dm_os_wait_stats WHERE wait_type LIKE 'PAGELATCH%'"
+        }
+      ]
+    },
+    {
+      "title": "Add Data Files",
+      "content": [
+        {
+          "type": "text",
+          "text": "Ensure TempDB has multiple data files (1 per core up to 8)."
+        }
+      ]
+    }
+  ]
+}

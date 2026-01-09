@@ -1,0 +1,24 @@
+{
+  "id": "f43ba3ad-4052-48b6-9442-bba1ac8fe717",
+  "title": "[PAAS] Cassandra Consistency Level Error",
+  "category": "PAAS",
+  "type": "database",
+  "shortDescription": "UnavailableException during quorum write.",
+  "fullDescription": "Not enough nodes available for consistency level QUORUM.",
+  "tags": [
+    "Cassandra",
+    "NoSQL",
+    "Availability"
+  ],
+  "steps": [
+    {
+      "title": "Check Node Status",
+      "content": [
+        {
+          "type": "text",
+          "text": "nodetool status"
+        }
+      ]
+    }
+  ]
+}

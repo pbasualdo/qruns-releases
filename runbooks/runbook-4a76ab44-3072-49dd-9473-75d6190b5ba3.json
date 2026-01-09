@@ -1,0 +1,34 @@
+{
+  "id": "4a76ab44-3072-49dd-9473-75d6190b5ba3",
+  "title": "[PAAS] Cosmos DB Request Rate Too Large (429)",
+  "category": "PAAS",
+  "type": "database",
+  "shortDescription": "Throttling due to insufficient RUs.",
+  "fullDescription": "Status code 429 observed in logs. Increase Throughput.",
+  "tags": [
+    "CosmosDB",
+    "NoSQL",
+    "Throttling"
+  ],
+  "steps": [
+    {
+      "title": "Analyze 429s",
+      "content": [
+        {
+          "type": "code",
+          "language": "sql",
+          "code": "SELECT * FROM c WHERE c.statusCode = 429"
+        }
+      ]
+    },
+    {
+      "title": "Increase RUs",
+      "content": [
+        {
+          "type": "text",
+          "text": "Navigate to 'Scale & Settings' and increase Max RUs."
+        }
+      ]
+    }
+  ]
+}

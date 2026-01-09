@@ -1,0 +1,25 @@
+{
+  "id": "31cf5ef8-c6b3-4741-b8f7-7fe3b0e50241",
+  "title": "[IAAS] SQL Deadlock Analysis",
+  "category": "IAAS",
+  "type": "database",
+  "shortDescription": "Extract and analyze deadlock graphs.",
+  "fullDescription": "Users reporting transaction failures (Error 1205). Retrieve deadlock graph from system health session.",
+  "tags": [
+    "SQL",
+    "Deadlock",
+    "Error 1205"
+  ],
+  "steps": [
+    {
+      "title": "Query System Health",
+      "content": [
+        {
+          "type": "code",
+          "language": "sql",
+          "code": "SELECT * FROM sys.dm_xe_session_targets"
+        }
+      ]
+    }
+  ]
+}

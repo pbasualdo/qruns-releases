@@ -1,0 +1,24 @@
+{
+  "id": "3b75bafb-7478-4326-a07c-f86dca1fbb93",
+  "title": "[PAAS] Azure SQL Elastic Pool Exhaustion",
+  "category": "PAAS",
+  "type": "database",
+  "shortDescription": "Pool eDTU limit reached by noisy neighbor.",
+  "fullDescription": "One DB consuming all pool resources affecting others.",
+  "tags": [
+    "AzureSQL",
+    "ElasticPool",
+    "Capacity"
+  ],
+  "steps": [
+    {
+      "title": "Identify Top Consumer",
+      "content": [
+        {
+          "type": "text",
+          "text": "Check Pool Metrics > Resource utilization per database."
+        }
+      ]
+    }
+  ]
+}

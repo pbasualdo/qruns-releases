@@ -1,0 +1,23 @@
+{
+  "id": "2",
+  "title": "[DR] Full Data Center Outage",
+  "shortDescription": "Simulates a total loss of th...",
+  "fullDescription": "Simulates a total loss of the primary data center requiring full failover.",
+  "type": "alert",
+  "category": "IAAS",
+  "tags": ["Site / DR", "Critical"],
+  "steps": [
+    {
+      "title": "Assessment",
+      "content": [
+        { "type": "text", "text": "Confirm total loss of connectivity to DC-1." }
+      ]
+    },
+    {
+      "title": "Failover",
+      "content": [
+        { "type": "text", "text": "Initiate DR Failover procedure." }
+      ]
+    }
+  ]
+}

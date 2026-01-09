@@ -1,0 +1,24 @@
+{
+  "id": "bbded022-082e-4b63-8a36-b157466f35ae",
+  "title": "[IAAS] SQL Backup Failure - Storage",
+  "category": "IAAS",
+  "type": "database",
+  "shortDescription": "Backup job failed due to insufficient disk space.",
+  "fullDescription": "Nightly backup job failed. Verify storage availability.",
+  "tags": [
+    "SQL",
+    "Backup",
+    "Storage"
+  ],
+  "steps": [
+    {
+      "title": "Check Drive Space",
+      "content": [
+        {
+          "type": "text",
+          "text": "RDP to server and check Backup drive (usually F: or G:)."
+        }
+      ]
+    }
+  ]
+}

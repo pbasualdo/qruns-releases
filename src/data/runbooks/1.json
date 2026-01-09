@@ -1,0 +1,46 @@
+{
+  "id": "1",
+  "title": "[DR] AG Replica Sync Failure",
+  "shortDescription": "Simulates synchronization failure...",
+  "fullDescription": "Simulates synchronization failure (NOT SYNCHRONIZING) leading to RPO risk.",
+  "type": "graph",
+  "category": "IAAS",
+  "tags": ["DR", "AG / Network"],
+  "steps": [
+    {
+      "title": "Detect & Impact Check",
+      "content": [
+        { "type": "text", "text": "1. Alert: Not Synchronizing." },
+        { "type": "text", "text": "2. Check Log Growth on Primary:" },
+        { 
+          "type": "code", 
+          "language": "sql", 
+          "code": "SELECT name, log_reuse_wait_desc FROM sys.databases;" 
+        }
+      ]
+    },
+    {
+      "title": "Diagnose State",
+      "content": [
+        { "type": "text", "text": "1. Check synchronization state:" },
+        { "type": "text", "text": "\n(SUSPENDED, DISCONNECTED, NOT SYNCHRONIZING)" },
+        { 
+          "type": "code", 
+          "language": "sql", 
+          "code": "SELECT synchronization_state_desc FROM sys.dm_hadr_database_replica_states;" 
+        }
+      ]
+    },
+    {
+      "title": "Attempt Resume",
+      "content": [
+        { "type": "text", "text": "1. Try Resuming:" },
+        { 
+          "type": "code", 
+          "language": "sql", 
+          "code": "ALTER DATABASE [DBName] SET HADR RESUME;" 
+        }
+      ]
+    }
+  ]
+}

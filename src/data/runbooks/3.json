@@ -1,0 +1,23 @@
+{
+  "id": "3",
+  "title": "[DR] Data Loss Event (PITR)",
+  "shortDescription": "Simulates accidental data ...",
+  "fullDescription": "Simulates accidental data deletion requiring Point-in-Time Recovery.",
+  "type": "database",
+  "category": "IAAS",
+  "tags": ["Data", "Restore"],
+  "steps": [
+    {
+      "title": "Identify LSN",
+      "content": [
+        { "type": "text", "text": "Identify the LSN immediately prior to the data loss event." }
+      ]
+    },
+    {
+      "title": "Restore",
+      "content": [
+        { "type": "text", "text": "Execute RESTORE DATABASE with STOPBEFOREMARK." }
+      ]
+    }
+  ]
+}

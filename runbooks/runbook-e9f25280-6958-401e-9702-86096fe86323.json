@@ -1,0 +1,25 @@
+{
+  "id": "e9f25280-6958-401e-9702-86096fe86323",
+  "title": "[PAAS] Azure MySQL High IOPS",
+  "category": "PAAS",
+  "type": "database",
+  "shortDescription": "IO throttling on flexible server.",
+  "fullDescription": "High write IOPS causing latency.",
+  "tags": [
+    "MySQL",
+    "Performance",
+    "IOPS"
+  ],
+  "steps": [
+    {
+      "title": "Check Innodb Status",
+      "content": [
+        {
+          "type": "code",
+          "language": "sql",
+          "code": "SHOW ENGINE INNODB STATUS;"
+        }
+      ]
+    }
+  ]
+}
