@@ -1,6 +1,7 @@
 {
   "name": "qruns",
   "description": "A modern, efficient runbook executor for operations teams.",
+  "version": "1.3.0",
   "author": "Me",
   "main": "dist-electron/main.js",
   "type": "module",
