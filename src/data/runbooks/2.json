@@ -4,7 +4,7 @@
   "shortDescription": "Simulates a total loss of th...",
   "fullDescription": "Simulates a total loss of the primary data center requiring full failover.",
   "type": "alert",
-  "category": "IAAS",
+  "category": "qrun",
   "tags": ["Site / DR", "Critical"],
   "steps": [
     {

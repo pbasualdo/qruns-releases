@@ -155,6 +155,11 @@ function parseRunbookFile(filePath: string): any | null {
         data.category = 'General';
     }
 
+    // STRICT FILTER: Only allow 'qrun' category
+    if (data.category.toLowerCase() !== 'qrun') {
+        return null;
+    }
+
     // Steps: Ensure array
     if (!Array.isArray(data.steps)) {
         data.steps = [];
@@ -404,7 +409,8 @@ ipcMain.handle('clone-repository', async (_, url, options = {}) => {
         return new Promise((resolve) => {
             console.log(`Cloning ${url} into ${targetDir} (Interactive: ${interactive})`);
             
-            let command = `git clone "${url}" "${targetDir}"`;
+            // Shallow clone for speed
+            let command = `git clone --depth 1 "${url}" "${targetDir}"`;
             let execOptions: any = {
                 env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
                 timeout: 30000 
@@ -412,10 +418,7 @@ ipcMain.handle('clone-repository', async (_, url, options = {}) => {
 
             if (interactive) {
                 // Windows specific: Open a new terminal window and wait for it to close
-                // "start /b /wait" keeps it in same console (hidden), "start /wait" opens new window
-                // We use 'cmd /c' to run git and 'pause' if error so user sees it? 
-                // Actually 'git clone ...'
-                command = `start /wait cmd /c "git clone ${url} ${targetDir} & if errorlevel 1 pause"`;
+                command = `start /wait cmd /c "git clone --depth 1 ${url} ${targetDir} & if errorlevel 1 pause"`;
                 execOptions = {
                     env: process.env, // Allow all envs
                     timeout: 0 // No timeout (user might verify 2FA)
@@ -426,28 +429,41 @@ ipcMain.handle('clone-repository', async (_, url, options = {}) => {
                 // In interactive mode, 'start' returns success if the WINDOW opened, not if git succeeded.
                 // So we must verify if the directory exists after execution.
                 
+                let success = false;
                 if (interactive) {
                     if (fs.existsSync(targetDir) && fs.readdirSync(targetDir).length > 0) {
-                         // Success
-                    } else {
-                        resolve({ success: false, error: "Interactive clone failed or was cancelled." });
-                        return;
+                         success = true;
                     }
-                } else if (error) {
-                    // Check for common errors
+                } else if (!error) {
+                    success = true;
+                } else {
+                     // Check for common errors
                     const msg = stderr || error.message;
                     console.error("Clone error:", msg);
                     resolve({ success: false, error: msg.includes('Authentication failed') ? 'AUTH_FAILED' : msg });
                     return;
                 }
 
-                // Success - Add to sources
-                const config = getConfig();
-                if (!config.sources.includes(targetDir)) {
-                    config.sources.push(targetDir);
-                    saveConfig(config);
+                if (success) {
+                    // VALIDATION: Must have 'qrun' folder
+                    const qrunPath = path.join(targetDir, 'qrun');
+                    if (!fs.existsSync(qrunPath)) {
+                        // Cleanup
+                        try { fs.rmSync(targetDir, { recursive: true, force: true }); } catch (e) { console.error("Cleanup failed", e); }
+                        resolve({ success: false, error: "Repository does not contain a 'qrun' folder." });
+                        return;
+                    }
+
+                    // Success - Add to sources (pointing to qrun subfolder)
+                    const config = getConfig();
+                    if (!config.sources.includes(qrunPath)) {
+                        config.sources.push(qrunPath);
+                        saveConfig(config);
+                    }
+                    resolve({ success: true, sources: config.sources });
+                } else {
+                     resolve({ success: false, error: "Clone failed." });
                 }
-                resolve({ success: true, sources: config.sources });
             });
         });
 

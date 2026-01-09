@@ -4,7 +4,7 @@
   "shortDescription": "Simulates accidental data ...",
   "fullDescription": "Simulates accidental data deletion requiring Point-in-Time Recovery.",
   "type": "database",
-  "category": "IAAS",
+  "category": "qrun",
   "tags": ["Data", "Restore"],
   "steps": [
     {

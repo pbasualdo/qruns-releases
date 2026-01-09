@@ -4,7 +4,7 @@
   "shortDescription": "Simulates synchronization failure...",
   "fullDescription": "Simulates synchronization failure (NOT SYNCHRONIZING) leading to RPO risk.",
   "type": "graph",
-  "category": "IAAS",
+  "category": "qrun",
   "tags": ["DR", "AG / Network"],
   "steps": [
     {
