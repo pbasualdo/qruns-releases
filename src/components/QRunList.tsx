@@ -58,7 +58,6 @@ export const QRunList: React.FC = () => {
     loadRunbooks();
 
     if (window.electronAPI) {
-        window.electronAPI.onUpdateAvailable((info) => {
             console.log('Update available:', info);
             setUpdateStatus('downloading');
             setUpdateInfo(info);
@@ -70,10 +69,18 @@ export const QRunList: React.FC = () => {
         });
         window.electronAPI.onUpdateError((err) => {
             console.error('Update error:', err);
-            // setUpdateStatus('error'); // Optional: don't show error to user constantly
+            setUpdateStatus('error');
+            setTimeout(() => setUpdateStatus(null), 5000);
         });
     }
   }, []);
+
+  const handleCheckForUpdates = () => {
+      if (window.electronAPI) {
+          setUpdateStatus('checking');
+          window.electronAPI.checkForUpdates();
+      }
+  };
 
   // -- Derived State --
   const filteredRuns = runbooks.filter(run => {
@@ -288,21 +295,32 @@ export const QRunList: React.FC = () => {
             </div>
 
             <div className="sidebar-footer">
-               <div className="copyright">Copyright © 2026 Quick Runbooks</div>
-               {updateStatus && (
+                <div className="copyright">
+                    Copyright © 2026 Quick Runbooks
+                    <button 
+                        className="btn-link text-tertiary" 
+                        style={{ marginLeft: '8px', fontSize: '0.7em', textDecoration: 'underline', cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
+                        onClick={handleCheckForUpdates}
+                        disabled={updateStatus === 'checking' || updateStatus === 'downloading'}
+                    >
+                        {updateStatus === 'checking' ? 'Checking...' : 'Check for Updates'}
+                    </button>
+                    {updateStatus === 'error' && <span style={{ color: 'var(--danger)', marginLeft: '8px', fontSize: '0.8em' }}>Error checking</span>}
+                </div>
+                {updateStatus === 'downloading' && (
+                    <div className="update-status">
+                        <span className="text-small text-tertiary">
+                            Downloading update {updateInfo?.version && `(v${updateInfo.version})`}...
+                        </span>
+                    </div>
+                )}
+                {updateStatus === 'ready' && (
                    <div className="update-status">
-                       {updateStatus === 'downloading' && (
-                           <span className="text-small text-tertiary">
-                               Downloading update {updateInfo?.version && `(v${updateInfo.version})`}...
-                           </span>
-                       )}
-                       {updateStatus === 'ready' && (
-                           <button className="btn btn-primary btn-small" onClick={() => window.electronAPI.quitAndInstall()}>
-                               Restart to Update {updateInfo?.version && `(v${updateInfo.version})`}
-                           </button>
-                       )}
+                       <button className="btn btn-primary btn-small" onClick={() => window.electronAPI.quitAndInstall()}>
+                           Restart to Update {updateInfo?.version && `(v${updateInfo.version})`}
+                       </button>
                    </div>
-               )}
+                )}
             </div>
          </aside>
 
