@@ -58,6 +58,7 @@ export const QRunList: React.FC = () => {
     loadRunbooks();
 
     if (window.electronAPI) {
+        window.electronAPI.onUpdateAvailable((info) => {
             console.log('Update available:', info);
             setUpdateStatus('downloading');
             setUpdateInfo(info);
