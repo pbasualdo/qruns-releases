@@ -490,6 +490,7 @@ ipcMain.handle('clone-repository', async (_, url, options = {}) => {
 // --- Auto-Update ---
 
 import { autoUpdater } from "electron-updater"
+import { shell } from "electron";
 
 autoUpdater.logger = log;
 autoUpdater.autoDownload = false; // We will manually trigger download
@@ -506,6 +507,16 @@ ipcMain.handle('check-for-updates', () => {
   autoUpdater.checkForUpdates();
 });
 
+ipcMain.handle('start-auto-download', () => {
+    log.info('User requested Auto-Update. Starting download...');
+    autoUpdater.downloadUpdate();
+});
+
+ipcMain.handle('start-manual-download', (event, url) => {
+    log.info('User requested Manual Update. Opening URL:', url);
+    shell.openExternal(url);
+});
+
 ipcMain.handle('quit-and-install', () => {
   autoUpdater.quitAndInstall();
 });
@@ -518,10 +529,7 @@ autoUpdater.on('checking-for-update', () => {
 autoUpdater.on('update-available', (info) => {
     log.info('Update available:', info);
     win?.webContents.send('update-available', info);
-    // Auto download if desired, but we'll let user click? 
-    // Let's auto download for smooth UX or let user decide? 
-    // Plan said "downloading..." in UI, so let's start download immediately
-    autoUpdater.downloadUpdate(); 
+    // DO NOT auto download. Wait for user action.
 });
 
 autoUpdater.on('update-not-available', (info) => {

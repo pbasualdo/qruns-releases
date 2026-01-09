@@ -60,7 +60,7 @@ export const QRunList: React.FC = () => {
     if (window.electronAPI) {
         window.electronAPI.onUpdateAvailable((info) => {
             console.log('Update available:', info);
-            setUpdateStatus('downloading');
+            setUpdateStatus('available'); // Wait for user choice
             setUpdateInfo(info);
         });
         window.electronAPI.onUpdateDownloaded((info) => {
@@ -324,6 +324,42 @@ export const QRunList: React.FC = () => {
                         {updateStatus === 'not-available' && <span style={{ color: 'var(--success)', fontSize: '0.8em' }}>Up to date</span>}
                     </div>
                 </div>
+                {updateStatus === 'available' && (
+                    <div className="update-status" style={{flexDirection: 'column', gap: '5px', alignItems: 'flex-start'}}>
+                        <span className="text-small text-tertiary">
+                            Update v{updateInfo?.version} available:
+                        </span>
+                        <div style={{display: 'flex', gap: '5px'}}>
+                            <button 
+                                className="btn btn-primary btn-small" 
+                                style={{fontSize: '0.7em', padding: '2px 6px'}}
+                                onClick={() => {
+                                    setUpdateStatus('downloading');
+                                    window.electronAPI.startAutoDownload();
+                                }}
+                            >
+                                ⚡ Auto
+                            </button>
+                            <button 
+                                className="btn btn-secondary btn-small" 
+                                style={{fontSize: '0.7em', padding: '2px 6px'}}
+                                onClick={() => {
+                                    setUpdateStatus(null); // Clear status as browser handles it
+                                    // Construct download URL if path is not absolute URL (GitHub releases usually provide full url in assets usually, but electron-updater info object might differ)
+                                    // Usually info.path or we can construct it. Let's assume info has proper release info.
+                                    // Electron-updater info object has `path` which is usually the file name, and `releaseName`, `releaseNotes`.
+                                    // Safest is to open the releases page if specific URL is hard to get, OR try to find the asset url.
+                                    // Let's open the release page for safety if we can't find exact url, or just the standard specific URL if present.
+                                    // Actually, let's open the GitHub Releases page to be safe and consistent with the "Manual update" strategy.
+                                    const releaseUrl = `https://github.com/pbasualdo/qruns/releases/tag/v${updateInfo?.version}`;
+                                    window.electronAPI.startManualDownload(releaseUrl);
+                                }}
+                            >
+                                📥 Manual
+                            </button>
+                        </div>
+                    </div>
+                )}
                 {updateStatus === 'downloading' && (
                     <div className="update-status">
                         <span className="text-small text-tertiary">

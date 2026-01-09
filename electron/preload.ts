@@ -17,4 +17,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateError: (callback: (err: any) => void) => ipcRenderer.on('update-error', (_event, err) => callback(err)),
   downloadTemplate: (format: 'json' | 'md') => ipcRenderer.invoke('download-template', format),
   importRunbook: () => ipcRenderer.invoke('import-file'),
+  startAutoDownload: () => ipcRenderer.invoke('start-auto-download'),
+  startManualDownload: (url: string) => ipcRenderer.invoke('start-manual-download', url),
 })

@@ -18,5 +18,7 @@ interface Window {
     onUpdateError: (callback: (err: any) => void) => void;
     downloadTemplate: (format: 'json' | 'md') => Promise<{ success: boolean; error?: string }>;
     importRunbook: () => Promise<{ success: boolean; error?: string }>;
+    startAutoDownload: () => Promise<void>;
+    startManualDownload: (url: string) => Promise<void>;
   }
 }
