@@ -3,6 +3,10 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs'
 import { exec } from 'node:child_process'
+import log from 'electron-log';
+
+log.transports.file.level = 'info';
+log.info('App starting...');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -21,7 +25,7 @@ function createWindow() {
     width: 1200,
     height: 800,
     backgroundColor: '#0F172A',
-    icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+    icon: path.join(process.env.VITE_PUBLIC || '', 'electron-vite.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },
@@ -483,20 +487,21 @@ ipcMain.handle('clone-repository', async (_, url, options = {}) => {
     }
 });
 
-// --- Auto Updater ---
-import { autoUpdater } from 'electron-updater';
+// --- Auto-Update ---
 
-// Basic configuration
-autoUpdater.autoDownload = false;
+import { autoUpdater } from "electron-updater"
+
+autoUpdater.logger = log;
+autoUpdater.autoDownload = false; // We will manually trigger download
 autoUpdater.autoInstallOnAppQuit = true;
 
 ipcMain.handle('check-for-updates', () => {
-  if (!win) return;
-  // In dev, we can force it to check (mocking) or just skip
-  if (!app.isPackaged) {
-      console.log('Skipping update check in dev mode');
-      win.webContents.send('update-error', 'Cannot check for updates in dev mode');
-      return;
+  log.info('Manual check for updates triggered');
+  if (process.env.VITE_DEV_SERVER_URL) {
+      log.info('Skipping update check in dev mode');
+      // Mock an update available for testing UI
+      // win?.webContents.send('update-available', { version: '9.9.9' });
+      return; 
   }
   autoUpdater.checkForUpdates();
 });
@@ -507,10 +512,11 @@ ipcMain.handle('quit-and-install', () => {
 
 // Event forwarding
 autoUpdater.on('checking-for-update', () => {
-    // optional logging
+    log.info('Checking for update...');
 });
 
 autoUpdater.on('update-available', (info) => {
+    log.info('Update available:', info);
     win?.webContents.send('update-available', info);
     // Auto download if desired, but we'll let user click? 
     // Let's auto download for smooth UX or let user decide? 
@@ -519,18 +525,22 @@ autoUpdater.on('update-available', (info) => {
 });
 
 autoUpdater.on('update-not-available', (info) => {
+    log.info('Update not available:', info);
     win?.webContents.send('update-not-available', info);
 });
 
 autoUpdater.on('error', (err) => {
+    log.error('Update error:', err);
     win?.webContents.send('update-error', err.toString());
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
+    log.info('Download progress:', progressObj.percent);
     // Optionally send progress
 });
 
 autoUpdater.on('update-downloaded', (info) => {
+    log.info('Update downloaded:', info);
     win?.webContents.send('update-downloaded', info);
 });
 
