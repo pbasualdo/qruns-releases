@@ -28,6 +28,25 @@ Quick Runbooks is a desktop application built with Electron, React, and Vite des
 1.  Download the latest `.exe` release.
 2.  Run the installer `Quick Runbooks Setup x.x.x.exe`.
 3.  Launch the app!
+4.  (Optional) **Enable Auto-Updates**: Run `scripts/Install-Certificate.ps1` to trust the self-signed certificate.
+
+## 🔄 Updates
+
+You have two options to keep Quick Runbooks up to date:
+
+### Option A: Automatic Updates (Recommended)
+Requires a one-time setup to trust the application certificate.
+1.  Run the helper script in PowerShell as Administrator:
+    ```powershell
+    .\scripts\Install-Certificate.ps1
+    ```
+2.  Now the app will automatically detect, download, and install updates in the background.
+
+### Option B: Manual Updates
+If you prefer not to install the certificate:
+1.  When an update is released, visit the [Releases Page](https://github.com/pbasualdo/qruns/releases).
+2.  Download the latest `qruns-Setup-x.x.x.exe`.
+3.  Run the installer to update your current version.
 
 ### Building from Source
 
