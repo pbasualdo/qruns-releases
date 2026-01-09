@@ -519,7 +519,7 @@ autoUpdater.on('update-available', (info) => {
 });
 
 autoUpdater.on('update-not-available', (info) => {
-    // win?.webContents.send('update-not-available', info);
+    win?.webContents.send('update-not-available', info);
 });
 
 autoUpdater.on('error', (err) => {

@@ -14,6 +14,7 @@ interface Window {
     quitAndInstall: () => Promise<void>;
     onUpdateAvailable: (callback: (info: any) => void) => void;
     onUpdateDownloaded: (callback: (info: any) => void) => void;
+    onUpdateNotAvailable: (callback: () => void) => void;
     onUpdateError: (callback: (err: any) => void) => void;
     downloadTemplate: (format: 'json' | 'md') => Promise<{ success: boolean; error?: string }>;
     importRunbook: () => Promise<{ success: boolean; error?: string }>;

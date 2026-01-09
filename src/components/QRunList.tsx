@@ -73,6 +73,11 @@ export const QRunList: React.FC = () => {
             setUpdateStatus('error');
             setTimeout(() => setUpdateStatus(null), 5000);
         });
+        window.electronAPI.onUpdateNotAvailable(() => {
+            console.log('Update not available');
+            setUpdateStatus('not-available');
+            setTimeout(() => setUpdateStatus(null), 3000);
+        });
     }
   }, []);
 
@@ -297,16 +302,27 @@ export const QRunList: React.FC = () => {
 
             <div className="sidebar-footer">
                 <div className="copyright">
-                    Copyright © 2026 Quick Runbooks
-                    <button 
-                        className="btn-link text-tertiary" 
-                        style={{ marginLeft: '8px', fontSize: '0.7em', textDecoration: 'underline', cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
-                        onClick={handleCheckForUpdates}
-                        disabled={updateStatus === 'checking' || updateStatus === 'downloading'}
-                    >
-                        {updateStatus === 'checking' ? 'Checking...' : 'Check for Updates'}
-                    </button>
-                    {updateStatus === 'error' && <span style={{ color: 'var(--danger)', marginLeft: '8px', fontSize: '0.8em' }}>Error checking</span>}
+                    <div>Copyright © 2026 Quick Runbooks</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button 
+                            className="btn-link text-tertiary" 
+                            style={{ 
+                                fontSize: '0.7em', 
+                                textDecoration: 'underline', 
+                                cursor: 'pointer', 
+                                background: 'none', 
+                                border: 'none', 
+                                padding: 0,
+                                opacity: (updateStatus === 'checking' || updateStatus === 'downloading') ? 0.5 : 1
+                            }}
+                            onClick={handleCheckForUpdates}
+                            disabled={updateStatus === 'checking' || updateStatus === 'downloading'}
+                        >
+                            {updateStatus === 'checking' ? 'Checking...' : 'Check for Updates'}
+                        </button>
+                        {updateStatus === 'error' && <span style={{ color: 'var(--danger)', fontSize: '0.8em' }}>Error</span>}
+                        {updateStatus === 'not-available' && <span style={{ color: 'var(--success)', fontSize: '0.8em' }}>Up to date</span>}
+                    </div>
                 </div>
                 {updateStatus === 'downloading' && (
                     <div className="update-status">

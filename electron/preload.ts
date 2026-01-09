@@ -11,9 +11,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   cloneRepository: (url: string, options?: any) => ipcRenderer.invoke('clone-repository', url, options),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),
-  onUpdateAvailable: (callback: any) => ipcRenderer.on('update-available', (_event, info) => callback(info)),
-  onUpdateDownloaded: (callback: any) => ipcRenderer.on('update-downloaded', (_event, info) => callback(info)),
-  onUpdateError: (callback: any) => ipcRenderer.on('update-error', (_event, err) => callback(err)),
+  onUpdateAvailable: (callback: (info: any) => void) => ipcRenderer.on('update-available', (_event, info) => callback(info)),
+  onUpdateDownloaded: (callback: (info: any) => void) => ipcRenderer.on('update-downloaded', (_event, info) => callback(info)),
+  onUpdateNotAvailable: (callback: () => void) => ipcRenderer.on('update-not-available', () => callback()),
+  onUpdateError: (callback: (err: any) => void) => ipcRenderer.on('update-error', (_event, err) => callback(err)),
   downloadTemplate: (format: 'json' | 'md') => ipcRenderer.invoke('download-template', format),
   importRunbook: () => ipcRenderer.invoke('import-file'),
 })
