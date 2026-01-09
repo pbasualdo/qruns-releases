@@ -3,8 +3,9 @@
   "title": "[DR] Data Loss Event (PITR)",
   "shortDescription": "Simulates accidental data ...",
   "fullDescription": "Simulates accidental data deletion requiring Point-in-Time Recovery.",
-  "type": "database",
-  "category": "qrun",
+  "type": "qrun",
+  "service": "IAAS",
+  "category": "Database",
   "tags": ["Data", "Restore"],
   "steps": [
     {

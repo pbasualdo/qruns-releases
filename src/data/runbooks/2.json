@@ -3,8 +3,9 @@
   "title": "[DR] Full Data Center Outage",
   "shortDescription": "Simulates a total loss of th...",
   "fullDescription": "Simulates a total loss of the primary data center requiring full failover.",
-  "type": "alert",
-  "category": "qrun",
+  "type": "qrun",
+  "service": "IAAS",
+  "category": "Alert",
   "tags": ["Site / DR", "Critical"],
   "steps": [
     {

@@ -150,14 +150,25 @@ function parseRunbookFile(filePath: string): any | null {
         data.tags = [];
     }
 
-    // Category: Default
-    if (!data.category) {
-        data.category = 'General';
+    // Type: Strict check
+    if (data.type !== 'qrun') {
+        // If it's missing or wrong, return null (strict filter)
+        // OR: for migration, we could default it?
+        // User said: "if there other 'types' remove them".
+        // Implies we only want "qrun".
+        // Note: Existing files might fail this check until updated.
+        // We will update files next.
+         return null; 
     }
 
-    // STRICT FILTER: Only allow 'qrun' category
-    if (data.category.toLowerCase() !== 'qrun') {
-        return null;
+    // Service: Default to IAAS if missing
+    if (!data.service) {
+        data.service = 'IAAS';
+    }
+
+    // Category: Default to Alert if missing
+    if (!data.category) {
+        data.category = 'Alert';
     }
 
     // Steps: Ensure array

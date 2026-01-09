@@ -15,8 +15,9 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
     title: '',
     shortDescription: '',
     fullDescription: '',
-    category: 'IAAS',
-    type: 'alert',
+    service: 'IAAS',
+    category: 'Alert',
+    type: 'qrun',
     tags: [],
     steps: []
   });
@@ -84,8 +85,8 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
   }
 
   const handleSave = () => {
-    if (!formData.title || !formData.category) {
-        alert("Title and Category are required.");
+    if (!formData.title || !formData.category || !formData.service) {
+        alert("Title, Service, and Category are required.");
         return;
     }
     
@@ -94,8 +95,9 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
       title: formData.title,
       shortDescription: formData.shortDescription || '',
       fullDescription: formData.fullDescription || '',
-      category: formData.category as 'IAAS' | 'PAAS' | 'SAAS',
-      type: formData.type as 'alert' | 'database' | 'graph',
+      service: formData.service as 'IAAS' | 'PAAS' | 'SAAS',
+      category: formData.category as 'Database' | 'Network' | 'Compute' | 'Alert',
+      type: 'qrun', // Force strict type
       tags: formData.tags || [],
       steps: formData.steps || [],
       sourcePath: initialData ? initialData.sourcePath : targetSource
@@ -150,11 +152,11 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
               {/* DOCUMENT METADATA (Pills) */}
               <div className="doc-meta-row">
                   <div className="meta-pill">
-                      <span className="meta-label">Category:</span>
+                      <span className="meta-label">Service:</span>
                       <select 
                         className="meta-input-transparent"
-                        value={formData.category}
-                        onChange={(e) => setFormData({...formData, category: e.target.value as 'IAAS' | 'PAAS' | 'SAAS'})}
+                        value={formData.service}
+                        onChange={(e) => setFormData({...formData, service: e.target.value as 'IAAS' | 'PAAS' | 'SAAS'})}
                       >
                           <option value="IAAS">IAAS</option>
                           <option value="PAAS">PAAS</option>
@@ -163,17 +165,16 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
                   </div>
 
                   <div className="meta-pill">
-                      <span className="meta-label">Type:</span>
+                      <span className="meta-label">Category:</span>
                       <select 
                         className="meta-input-transparent"
-                        value={formData.type}
-                        onChange={(e) => setFormData({...formData, type: e.target.value as 'alert' | 'database' | 'graph' | 'network' | 'compute'})}
+                        value={formData.category}
+                        onChange={(e) => setFormData({...formData, category: e.target.value as 'Database' | 'Network' | 'Compute' | 'Alert'})}
                       >
-                          <option value="alert">Alert</option>
-                          <option value="database">Database</option>
-                          <option value="graph">Graph</option>
-                          <option value="network">Network</option>
-                          <option value="compute">Compute</option>
+                          <option value="Alert">Alert</option>
+                          <option value="Database">Database</option>
+                          <option value="Network">Network</option>
+                          <option value="Compute">Compute</option>
                       </select>
                   </div>
 

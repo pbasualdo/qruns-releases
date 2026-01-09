@@ -1,4 +1,5 @@
-export type QRunType = 'alert' | 'database' | 'graph' | 'network' | 'compute';
+export type QRunService = 'IAAS' | 'PAAS' | 'SAAS';
+export type QRunCategory = 'Database' | 'Network' | 'Compute' | 'Alert';
 
 export interface QRunStep {
   title: string;
@@ -14,9 +15,10 @@ export interface QRun {
   title: string;
   shortDescription: string;
   fullDescription: string;
-  type: QRunType;
+  type: 'qrun';       // Strict: must be 'qrun'
+  service: QRunService; // replaces old keys for sidebar tabs
+  category: QRunCategory; // replaces old keys for icons
   tags: string[];
-  category: 'IAAS' | 'PAAS' | 'SAAS'; // For the sidebar tabs
   steps: QRunStep[];
   sourcePath?: string;
   format?: 'json' | 'md';

@@ -11575,7 +11575,7 @@ function parseRunbookFile(e) {
       const f = matter(p);
       o = f.data, o.format = "md", o.steps || (o.steps = parseMarkdownSteps(f.content));
     }
-    return !o || (o.sourcePath = path.dirname(e), o.id || (o.id = path.basename(e, h)), o.title || (o.title = o.id || "Untitled Runbook"), Array.isArray(o.tags) || (o.tags = []), o.category || (o.category = "General"), o.category.toLowerCase() !== "qrun") ? null : (Array.isArray(o.steps) || (o.steps = []), o);
+    return !o || (o.sourcePath = path.dirname(e), o.id || (o.id = path.basename(e, h)), o.title || (o.title = o.id || "Untitled Runbook"), Array.isArray(o.tags) || (o.tags = []), o.type !== "qrun") ? null : (o.service || (o.service = "IAAS"), o.category || (o.category = "Alert"), Array.isArray(o.steps) || (o.steps = []), o);
   } catch (h) {
     console.error(`Error parsing file ${e}`, h);
   }

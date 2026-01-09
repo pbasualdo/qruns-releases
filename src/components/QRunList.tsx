@@ -77,7 +77,8 @@ export const QRunList: React.FC = () => {
 
   // -- Derived State --
   const filteredRuns = runbooks.filter(run => {
-    const matchFilter = activeFilter === 'ALL' || (run.category || '') === activeFilter;
+    // Filter by SERVICE (IAAS/PAAS/SAAS) instead of category
+    const matchFilter = activeFilter === 'ALL' || (run.service || 'IAAS') === activeFilter;
     const matchSearch = (run.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                         (run.tags || []).some(t => (t || '').toLowerCase().includes(searchQuery.toLowerCase()));
     const matchTag = selectedTag ? (run.tags || []).includes(selectedTag) : true;
@@ -126,12 +127,18 @@ export const QRunList: React.FC = () => {
   };
 
   // -- Render Helpers --
-  const renderIcon = (type: string) => {
-      switch(type) {
+  const renderIcon = (category: string) => {
+      // Icon depends on CATEGORY (Database, Network, etc)
+      const cat = (category || '').toLowerCase();
+      switch(cat) {
           case 'alert': 
              return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2"><polygon points="12 2 2 22 22 22 12 2"></polygon><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
           case 'database':
              return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-secondary)" strokeWidth="2"><path d="M7 21h10a2 2 0 0 0 2-2V9.437a2 2 0 0 0-.611-1.432l-9.009-9.009A2 2 0 0 0 7.962 1H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2z"></path></svg>;
+          case 'network':
+             return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6" y2="6"></line><line x1="6" y1="18" x2="6" y2="18"></line></svg>;
+          case 'compute':
+             return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>;
           default:
              return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle></svg>;
       }
@@ -259,7 +266,7 @@ export const QRunList: React.FC = () => {
                   >
                      <div className="item-title">{run.title}</div>
                      <div className="item-meta">
-                        {renderIcon(run.type)}
+                        {renderIcon(run.category)}
                         <span className="item-badge">{run.category}</span>
                         <span className="item-desc">{run.shortDescription}</span>
                      </div>
@@ -300,7 +307,8 @@ export const QRunList: React.FC = () => {
                          <div className="title-group">
                             <h2>{selectedRun.title}</h2>
                             <div className="flex-row gap-05 mt-05">
-                               <span className="item-badge text-small">{selectedRun.category}</span>
+                               <span className="item-badge text-small">{selectedRun.service}</span>
+                               <span className="item-badge text-small" style={{background: 'var(--bg-tertiary)', color: 'var(--text-secondary)'}}>{selectedRun.category}</span>
                                <span className="text-tertiary">| {selectedRun.fullDescription}</span>
                                <span className="status-badge" style={{marginLeft: 'auto', background: 'var(--bg-tertiary)', color: 'var(--text-tertiary)'}}>
                                  {selectedRun.format === 'md' ? 'MARKDOWN' : 'JSON'}
