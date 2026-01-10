@@ -1,8 +1,8 @@
 {
   "id": "476c7ef8-5fe6-45c5-99ad-3dbd839dbf50",
   "title": "[PAAS] Azure Redis Cache High Memory",
-  "category": "PAAS",
-  "type": "compute",
+  "category": "Compute",
+  "type": "qrun",
   "shortDescription": "Eviction policy tuning or scaling.",
   "fullDescription": "Redis cache memory fragmentation > 90%.",
   "tags": [
@@ -29,5 +29,6 @@
         }
       ]
     }
-  ]
+  ],
+  "service": "PAAS"
 }

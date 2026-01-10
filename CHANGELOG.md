@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.13] - 2026-01-10
+
+### Fixed
+- **Electron**: Resolved "Sources management is only available in the Electron app" error by fixing preload script loading (switched to CommonJS).
+
+### Changed
+- **Data**: Migrated all runbooks to new schema (`service` / `category` / `type="qrun"`).
+
 ## [1.3.12] - 2026-01-09
 
 ### Security

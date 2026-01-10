@@ -1,8 +1,8 @@
 {
   "id": "e9f25280-6958-401e-9702-86096fe86323",
   "title": "[PAAS] Azure MySQL High IOPS",
-  "category": "PAAS",
-  "type": "database",
+  "category": "Database",
+  "type": "qrun",
   "shortDescription": "IO throttling on flexible server.",
   "fullDescription": "High write IOPS causing latency.",
   "tags": [
@@ -21,5 +21,6 @@
         }
       ]
     }
-  ]
+  ],
+  "service": "PAAS"
 }

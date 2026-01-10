@@ -266,8 +266,18 @@ export const QRunList: React.FC = () => {
                     title="Import Runbook"
                     onClick={async () => {
                         if (window.electronAPI) {
-                            await window.electronAPI.importRunbook();
-                            await loadRunbooks();
+                            try {
+                                const result = await window.electronAPI.importRunbook();
+                                if (result.success) {
+                                    alert('Runbook imported successfully!');
+                                    await loadRunbooks();
+                                } else if (result.error && result.error !== 'Canceled') {
+                                    alert('Import failed: ' + result.error);
+                                }
+                            } catch (e) {
+                                console.error(e);
+                                alert('An error occurred during import: ' + (e as Error).message);
+                            }
                         }
                     }}
                   >

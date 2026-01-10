@@ -34,13 +34,13 @@ const CloneSection: React.FC<{ onClone: (url: string, interactive: boolean) => P
 
     return (
         <div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div className="clone-input-container">
                 <input 
                    type="text" 
                    placeholder="https://github.com/user/repo.git"
                    value={url}
                    onChange={e => { setUrl(e.target.value); setStatus('IDLE'); }}
-                   style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+                   className="clone-input"
                    onKeyDown={e => { if (e.key === 'Enter') handleClone(false); }}
                    disabled={status === 'CLONING'}
                 />
@@ -54,15 +54,14 @@ const CloneSection: React.FC<{ onClone: (url: string, interactive: boolean) => P
             </div>
 
             {status === 'AUTH_REQUIRED' && (
-                 <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(245, 158, 11, 0.15)', borderRadius: '4px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                 <div className="auth-required-box">
+                    <p className="auth-required-text">
                         🔒 <strong>Authentication Required</strong><br/>
                         This appears to be a private repository.
                     </p>
                     <button 
-                        className="btn btn-secondary" 
+                        className="btn btn-secondary btn-full" 
                         onClick={() => handleClone(true)}
-                        style={{ width: '100%', justifyContent: 'center' }}
                     >
                         Launch Interactive Terminal
                     </button>
@@ -70,11 +69,11 @@ const CloneSection: React.FC<{ onClone: (url: string, interactive: boolean) => P
             )}
             
             {status === 'ERROR' && (
-                <p style={{ color: 'var(--danger)', fontSize: '0.8rem', marginTop: '0.5rem' }}>Error: {errorMsg}</p>
+                <p className="error-text">Error: {errorMsg}</p>
             )}
             
             {status === 'IDLE' && (
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '0.25rem' }}>
+                <p className="help-text">
                    Supports public and private (interactive) repositories.
                 </p>
             )}
@@ -111,6 +110,46 @@ export const SourcesModal: React.FC<SourcesModalProps> = ({ isOpen, onClose, onU
         }
     };
 
+    const handleSync = async () => {
+        if (window.electronAPI) {
+            const btn = document.getElementById('sync-btn');
+            if (btn) btn.textContent = 'Syncing...';
+            
+            try {
+                if (!window.electronAPI.refreshSources) {
+                    throw new Error("refreshSources API not found. Please restart the application.");
+                }
+                const result = await window.electronAPI.refreshSources();
+                
+                if (result.success) {
+                    const changes = result.results?.filter(r => r.success && r.output && !r.output.includes('Already up to date.'));
+                    const errors = result.results?.filter(r => !r.success);
+                    
+                    let msg = 'Sync completed.';
+                    if (changes && changes.length > 0) {
+                        msg += ` Updated ${changes.length} sources.`;
+                    } else {
+                        msg += ' All sources up to date.';
+                    }
+                    
+                    if (errors && errors.length > 0) {
+                        msg += `\nErrors in ${errors.length} sources.`;
+                    }
+                    
+                    alert(msg);
+                    onUpdate(); // Reload if needed
+                } else {
+                    alert('Sync failed: ' + result.error);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error syncing sources: ' + (err as Error).message);
+            } finally {
+                if (btn) btn.textContent = 'Sync Sources';
+            }
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -128,15 +167,15 @@ export const SourcesModal: React.FC<SourcesModalProps> = ({ isOpen, onClose, onU
                             <div key={src} className="source-item">
                                 <span className="source-path" title={src}>{src}</span>
                                 <button className="remove-source-btn" onClick={() => handleRemove(src)} title="Remove source">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2v2"></path></svg>
                                 </button>
                             </div>
                         ))}
                         {sources.length === 0 && <div className="empty-sources">No sources configured.</div>}
                     </div>
 
-                    <div className="clone-section" style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
-                         <h3 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Clone from URL</h3>
+                    <div className="clone-section">
+                         <h3>Clone from URL</h3>
                          <CloneSection onClone={async (url, interactive) => {
                              if (window.electronAPI) {
                                  const result = await window.electronAPI.cloneRepository(url, { interactive });
@@ -153,8 +192,16 @@ export const SourcesModal: React.FC<SourcesModalProps> = ({ isOpen, onClose, onU
                     </div>
                 </div>
                 <div className="modal-footer">
-                    <button className="btn btn-secondary" onClick={handleAdd}>+ Add Folder</button>
-                    <button className="btn btn-primary" onClick={onClose}>Done</button>
+                    <div className="footer-group">
+                        <button id="sync-btn" className="btn btn-secondary" onClick={handleSync} title="Git Pull on all sources">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '5px' }}><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l5 1.55a9 9 0 0 0 13.9 4.95"></path></svg>
+                            Sync Sources
+                        </button>
+                    </div>
+                    <div className="footer-group">
+                        <button className="btn btn-secondary" onClick={handleAdd}>+ Add Folder</button>
+                        <button className="btn btn-primary" onClick={onClose}>Done</button>
+                    </div>
                 </div>
             </div>
         </div>

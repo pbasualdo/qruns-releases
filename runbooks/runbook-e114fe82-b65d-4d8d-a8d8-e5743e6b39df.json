@@ -1,8 +1,8 @@
 {
   "id": "e114fe82-b65d-4d8d-a8d8-e5743e6b39df",
   "title": "[IAAS] SQL Long Running Query Kill",
-  "category": "IAAS",
-  "type": "database",
+  "category": "Database",
+  "type": "qrun",
   "shortDescription": "Terminate a runaway query consuming resources.",
   "fullDescription": "Ad-hoc query running for > 1 hour causing slowdowns.",
   "tags": [
@@ -30,5 +30,6 @@
         }
       ]
     }
-  ]
+  ],
+  "service": "IAAS"
 }

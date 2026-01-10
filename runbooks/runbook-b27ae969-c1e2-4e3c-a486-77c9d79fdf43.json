@@ -1,8 +1,8 @@
 {
   "id": "b27ae969-c1e2-4e3c-a486-77c9d79fdf43",
   "title": "[IAAS] SQL Service Restart Procedure",
-  "category": "IAAS",
-  "type": "compute",
+  "category": "Compute",
+  "type": "qrun",
   "shortDescription": "Emergency restart of SQL Engine.",
   "fullDescription": "Last resort for hung instance. Ensure approvals are obtained.",
   "tags": [
@@ -29,5 +29,6 @@
         }
       ]
     }
-  ]
+  ],
+  "service": "IAAS"
 }

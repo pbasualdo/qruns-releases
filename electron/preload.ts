@@ -20,4 +20,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startAutoDownload: () => ipcRenderer.invoke('start-auto-download'),
   startManualDownload: (url: string) => ipcRenderer.invoke('start-manual-download', url),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  refreshSources: () => ipcRenderer.invoke('refresh-sources'),
 })

@@ -27,7 +27,7 @@ function createWindow() {
     backgroundColor: '#0F172A',
     icon: path.join(process.env.VITE_PUBLIC || '', 'electron-vite.svg'),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.mjs'),
+      preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: false // Required for some Node APIs if used, but false is safer if possible. Keeping false as per current config check.
@@ -632,6 +632,41 @@ ipcMain.handle('download-template', async (_, format: 'json' | 'md') => {
     }
 });
 
+// Refresh Sources (Git Pull)
+ipcMain.handle('refresh-sources', async () => {
+    try {
+        const config = getConfig();
+        const sources = config.sources || [];
+        const results: any[] = [];
+
+        for (const dir of sources) {
+            if (fs.existsSync(path.join(dir, '.git'))) {
+                // It's a git repo
+                try {
+                    await new Promise<void>((resolve, reject) => {
+                        exec('git pull', { cwd: dir }, (error, stdout, stderr) => {
+                            if (error) {
+                                results.push({ source: dir, success: false, error: stderr || error.message });
+                                reject(error); // Just to finish promise, we catch outside if needed but we want to continue loop
+                                return; // Handled
+                            }
+                            results.push({ source: dir, success: true, output: stdout });
+                            resolve();
+                        });
+                    }).catch(() => {}); // Catch reject to continue loop
+                } catch (e) {
+                    // Already handled in inner callback logically
+                }
+            } else {
+                // Not a git repo, skip
+            }
+        }
+        return { success: true, results };
+    } catch (e) {
+        return { success: false, error: (e as Error).message };
+    }
+});
+
 // Expose app version
 ipcMain.handle('get-app-version', () => {
     return app.getVersion();
@@ -648,6 +683,13 @@ ipcMain.handle('import-file', async () => {
 
         if (filePaths && filePaths.length > 0) {
             const srcFile = filePaths[0];
+
+            // VALIDATION: Check if file is valid runbook BEFORE copying
+            const validationCheck = parseRunbookFile(srcFile);
+            if (!validationCheck) {
+                return { success: false, error: "Invalid Runbook file. File must contain 'type: qrun' and valid structure." };
+            }
+
             const config = getConfig();
             const targetDir = config.sources[0]; // Default to first source
             

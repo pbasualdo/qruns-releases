@@ -1,8 +1,8 @@
 {
   "id": "49c057a5-ed34-4657-8063-d998781122f3",
   "title": "[PAAS] Azure SQL DTU Limit Reached",
-  "category": "PAAS",
-  "type": "database",
+  "category": "Database",
+  "type": "qrun",
   "shortDescription": "Scale up DTUs or optimize queries.",
   "fullDescription": "Database hitting 100% DTU usage. Application timeout increase.",
   "tags": [
@@ -29,5 +29,6 @@
         }
       ]
     }
-  ]
+  ],
+  "service": "PAAS"
 }

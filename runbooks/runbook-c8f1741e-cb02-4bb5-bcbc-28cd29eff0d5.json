@@ -1,8 +1,8 @@
 {
   "id": "c8f1741e-cb02-4bb5-bcbc-28cd29eff0d5",
   "title": "[IAAS] SQL Blocking Chain Resolution",
-  "category": "IAAS",
-  "type": "database",
+  "category": "Database",
+  "type": "qrun",
   "shortDescription": "Identify the head blocker and kill the session if needed.",
   "fullDescription": "Application timeout due to blocking. Find the root cause session.",
   "tags": [
@@ -21,5 +21,6 @@
         }
       ]
     }
-  ]
+  ],
+  "service": "IAAS"
 }

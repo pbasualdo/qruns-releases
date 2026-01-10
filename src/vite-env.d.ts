@@ -21,5 +21,6 @@ interface Window {
     startAutoDownload: () => Promise<void>;
     startManualDownload: (url: string) => Promise<void>;
     getAppVersion: () => Promise<string>;
+    refreshSources: () => Promise<{ success: boolean; results?: any[]; error?: string }>;
   }
 }

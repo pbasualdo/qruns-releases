@@ -1,8 +1,8 @@
 {
   "id": "a98cff5b-aa95-4169-a70f-b3c7eac54776",
   "title": "[IAAS] SQL TempDB Contention",
-  "category": "IAAS",
-  "type": "database",
+  "category": "Database",
+  "type": "qrun",
   "shortDescription": "Diagnose and resolve PAGELATCH_UP waits in TempDB.",
   "fullDescription": "Heavy allocation/deallocation in TempDB causing contention on allocation bitmaps.",
   "tags": [
@@ -30,5 +30,6 @@
         }
       ]
     }
-  ]
+  ],
+  "service": "IAAS"
 }

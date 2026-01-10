@@ -1,1 +1,23 @@
-"use strict";const o=require("electron");o.contextBridge.exposeInMainWorld("electronAPI",{getRunbooks:()=>o.ipcRenderer.invoke("get-runbooks"),saveRunbook:e=>o.ipcRenderer.invoke("save-runbook",e),deleteRunbook:e=>o.ipcRenderer.invoke("delete-runbook",e),getSources:()=>o.ipcRenderer.invoke("get-sources"),addSource:()=>o.ipcRenderer.invoke("add-source"),removeSource:e=>o.ipcRenderer.invoke("remove-source",e),cloneRepository:(e,r)=>o.ipcRenderer.invoke("clone-repository",e,r),checkForUpdates:()=>o.ipcRenderer.invoke("check-for-updates"),quitAndInstall:()=>o.ipcRenderer.invoke("quit-and-install"),onUpdateAvailable:e=>o.ipcRenderer.on("update-available",(r,n)=>e(n)),onUpdateDownloaded:e=>o.ipcRenderer.on("update-downloaded",(r,n)=>e(n)),onUpdateNotAvailable:e=>o.ipcRenderer.on("update-not-available",()=>e()),onUpdateError:e=>o.ipcRenderer.on("update-error",(r,n)=>e(n)),downloadTemplate:e=>o.ipcRenderer.invoke("download-template",e),importRunbook:()=>o.ipcRenderer.invoke("import-file"),startAutoDownload:()=>o.ipcRenderer.invoke("start-auto-download"),startManualDownload:e=>o.ipcRenderer.invoke("start-manual-download",e),getAppVersion:()=>o.ipcRenderer.invoke("get-app-version")});
+"use strict";
+const electron = require("electron");
+electron.contextBridge.exposeInMainWorld("electronAPI", {
+  getRunbooks: () => electron.ipcRenderer.invoke("get-runbooks"),
+  saveRunbook: (runbook) => electron.ipcRenderer.invoke("save-runbook", runbook),
+  deleteRunbook: (runbook) => electron.ipcRenderer.invoke("delete-runbook", runbook),
+  getSources: () => electron.ipcRenderer.invoke("get-sources"),
+  addSource: () => electron.ipcRenderer.invoke("add-source"),
+  removeSource: (path) => electron.ipcRenderer.invoke("remove-source", path),
+  cloneRepository: (url, options) => electron.ipcRenderer.invoke("clone-repository", url, options),
+  checkForUpdates: () => electron.ipcRenderer.invoke("check-for-updates"),
+  quitAndInstall: () => electron.ipcRenderer.invoke("quit-and-install"),
+  onUpdateAvailable: (callback) => electron.ipcRenderer.on("update-available", (_event, info) => callback(info)),
+  onUpdateDownloaded: (callback) => electron.ipcRenderer.on("update-downloaded", (_event, info) => callback(info)),
+  onUpdateNotAvailable: (callback) => electron.ipcRenderer.on("update-not-available", () => callback()),
+  onUpdateError: (callback) => electron.ipcRenderer.on("update-error", (_event, err) => callback(err)),
+  downloadTemplate: (format) => electron.ipcRenderer.invoke("download-template", format),
+  importRunbook: () => electron.ipcRenderer.invoke("import-file"),
+  startAutoDownload: () => electron.ipcRenderer.invoke("start-auto-download"),
+  startManualDownload: (url) => electron.ipcRenderer.invoke("start-manual-download", url),
+  getAppVersion: () => electron.ipcRenderer.invoke("get-app-version"),
+  refreshSources: () => electron.ipcRenderer.invoke("refresh-sources")
+});

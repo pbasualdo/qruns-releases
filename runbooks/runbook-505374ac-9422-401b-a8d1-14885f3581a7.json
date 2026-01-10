@@ -1,8 +1,8 @@
 {
   "id": "505374ac-9422-401b-a8d1-14885f3581a7",
   "title": "[PAAS] Postgres Connection Limit Exceeded",
-  "category": "PAAS",
-  "type": "database",
+  "category": "Database",
+  "type": "qrun",
   "shortDescription": "FATAL: remaining connection slots are reserved",
   "fullDescription": "Application leaks connections. Kill idle connections.",
   "tags": [
@@ -30,5 +30,6 @@
         }
       ]
     }
-  ]
+  ],
+  "service": "PAAS"
 }

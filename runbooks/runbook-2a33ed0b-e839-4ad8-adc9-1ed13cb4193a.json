@@ -1,8 +1,8 @@
 {
   "id": "2a33ed0b-e839-4ad8-adc9-1ed13cb4193a",
   "title": "[PAAS] Azure SQL Geo-Replication Failover",
-  "category": "PAAS",
-  "type": "network",
+  "category": "Network",
+  "type": "qrun",
   "shortDescription": "Initiate forced failover to secondary region.",
   "fullDescription": "Primary region outage reported. Switch to read-only secondary.",
   "tags": [
@@ -20,5 +20,6 @@
         }
       ]
     }
-  ]
+  ],
+  "service": "PAAS"
 }

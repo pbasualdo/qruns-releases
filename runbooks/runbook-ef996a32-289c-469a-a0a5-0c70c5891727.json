@@ -1,8 +1,8 @@
 {
   "id": "ef996a32-289c-469a-a0a5-0c70c5891727",
   "title": "[IAAS] SQL Log File Full",
-  "category": "IAAS",
-  "type": "database",
+  "category": "Database",
+  "type": "qrun",
   "shortDescription": "Transaction log is full (Error 9002).",
   "fullDescription": "Log drive is full or log file reached max size. Check log_reuse_wait_desc.",
   "tags": [
@@ -31,5 +31,6 @@
         }
       ]
     }
-  ]
+  ],
+  "service": "IAAS"
 }

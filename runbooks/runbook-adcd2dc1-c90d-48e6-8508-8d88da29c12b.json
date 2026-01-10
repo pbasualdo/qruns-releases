@@ -1,8 +1,8 @@
 {
   "id": "adcd2dc1-c90d-48e6-8508-8d88da29c12b",
   "title": "[IAAS] SQL Login Failure - Locked Account",
-  "category": "IAAS",
-  "type": "alert",
+  "category": "Alert",
+  "type": "qrun",
   "shortDescription": "Unlock SA or Service Account.",
   "fullDescription": "Failed logins (Error 18456) resulting in account lockout.",
   "tags": [
@@ -21,5 +21,6 @@
         }
       ]
     }
-  ]
+  ],
+  "service": "IAAS"
 }

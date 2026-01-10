@@ -1,8 +1,8 @@
 {
   "id": "3b75bafb-7478-4326-a07c-f86dca1fbb93",
   "title": "[PAAS] Azure SQL Elastic Pool Exhaustion",
-  "category": "PAAS",
-  "type": "database",
+  "category": "Database",
+  "type": "qrun",
   "shortDescription": "Pool eDTU limit reached by noisy neighbor.",
   "fullDescription": "One DB consuming all pool resources affecting others.",
   "tags": [
@@ -20,5 +20,6 @@
         }
       ]
     }
-  ]
+  ],
+  "service": "PAAS"
 }

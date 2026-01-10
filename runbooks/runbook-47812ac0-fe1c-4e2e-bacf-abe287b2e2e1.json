@@ -1,8 +1,8 @@
 {
   "id": "47812ac0-fe1c-4e2e-bacf-abe287b2e2e1",
   "title": "[IAAS] SQL Replication Latency Check",
-  "category": "IAAS",
-  "type": "database",
+  "category": "Database",
+  "type": "qrun",
   "shortDescription": "Monitor transactional replication latency.",
   "fullDescription": "Data not syncing to subscriber. Check Distributor for backlog.",
   "tags": [
@@ -19,5 +19,6 @@
         }
       ]
     }
-  ]
+  ],
+  "service": "IAAS"
 }

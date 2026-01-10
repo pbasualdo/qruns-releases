@@ -1,8 +1,8 @@
 {
   "id": "31415ce7-842d-4d2b-a6b1-077584cab3ee",
   "title": "[PAAS] Mongo DB Index Miss",
-  "category": "PAAS",
-  "type": "database",
+  "category": "Database",
+  "type": "qrun",
   "shortDescription": "Slow queries doing collection scans.",
   "fullDescription": "Identify queries with large 'docsExamined' vs 'nReturned'.",
   "tags": [
@@ -29,5 +29,6 @@
         }
       ]
     }
-  ]
+  ],
+  "service": "PAAS"
 }
