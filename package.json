@@ -33,12 +33,15 @@
       "target": [
         "nsis",
         "portable"
-      ],
-      "artifactName": "${name}-${target}-${version}.${ext}"
+      ]
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${name}-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${name}-Portable-${version}.${ext}"
     },
     "publish": [
       {
