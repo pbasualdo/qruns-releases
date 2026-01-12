@@ -1,7 +1,7 @@
 {
   "name": "qruns",
   "description": "A modern, efficient runbook executor for operations teams.",
-  "version": "1.3.16",
+  "version": "1.3.17",
   "author": "Pablo E. Basualdo",
   "main": "dist-electron/main.js",
   "type": "module",
