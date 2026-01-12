@@ -1,7 +1,7 @@
 {
   "name": "qruns",
   "description": "A modern, efficient runbook executor for operations teams.",
-  "version": "1.3.19",
+  "version": "1.3.20",
   "author": "Pablo E. Basualdo",
   "main": "dist-electron/main.js",
   "type": "module",
@@ -49,7 +49,7 @@
       "identityName": "pbasualdo.SOHOpsHelp",
       "publisher": "CN=DB33B8D5-A208-44E0-B5B9-6774D998D3CB",
       "publisherDisplayName": "pbasualdo",
-      "displayName": "SOHOpsHelp"
+      "displayName": "SOH Ops Help"
     },
     "publish": [
       {
