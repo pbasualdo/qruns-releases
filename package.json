@@ -47,12 +47,14 @@
       {
         "provider": "github",
         "owner": "pbasualdo",
-        "repo": "qruns-releases"
+        "repo": "qruns-releases",
+        "releaseType": "release"
       },
       {
         "provider": "github",
         "owner": "pbasualdo",
-        "repo": "qruns"
+        "repo": "qruns",
+        "releaseType": "release"
       }
     ]
   },
