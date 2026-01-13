@@ -31,7 +31,7 @@ function createSplashWindow() {
     icon: path.join(process.env.VITE_PUBLIC || '', 'icon.png'),
   });
   
-  const splashPath = path.join(__dirname, '..', 'electron', 'splash.html');
+  const splashPath = path.join(process.env.VITE_PUBLIC || '', 'splash.html');
   // Check if we are in production or dev to resolve path correctly
   // In prod, splash.html might be in resources or next to main.js? 
   // Actually, we are copying it to dist? No, we haven't configured build to copy it yet EXCEPT if we put it in public?
