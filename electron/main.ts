@@ -18,19 +18,49 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
 
-let win: BrowserWindow | null
+// Splash Screen Logic
+let splash: BrowserWindow | null;
 
-function createWindow() {
+function createSplashWindow() {
+  splash = new BrowserWindow({
+    width: 500,
+    height: 300,
+    transparent: true,
+    frame: false,
+    alwaysOnTop: true,
+    icon: path.join(process.env.VITE_PUBLIC || '', 'icon.png'),
+  });
+  
+  const splashPath = path.join(__dirname, '..', 'electron', 'splash.html');
+  // Check if we are in production or dev to resolve path correctly
+  // In prod, splash.html might be in resources or next to main.js? 
+  // Actually, we are copying it to dist? No, we haven't configured build to copy it yet EXCEPT if we put it in public?
+  // Easier: simpler approach. Content is simple.
+  // But let's try to load the file we just created.
+  
+  // In dev: c:\OfflineRepos\qruns\electron\splash.html
+  // In prod: resources/app/electron/splash.html (if valid)
+  
+  splash.loadFile(splashPath).catch(() => {
+     // Fallback if file not found (e.g. dist struct issues), load simple html
+     splash?.loadURL('data:text/html;charset=utf-8,<html><body style="background:#0F172A;color:white;display:flex;justify-content:center;align-items:center;"><h1>Quick Runbooks</h1></body></html>');
+  });
+  
+  splash.center();
+}
+
+function createMainWindow() {
   win = new BrowserWindow({
     width: 1200,
     height: 800,
     backgroundColor: '#0F172A',
-    icon: path.join(process.env.VITE_PUBLIC || '', 'electron-vite.svg'),
+    show: false, // Hide initially
+    icon: path.join(process.env.VITE_PUBLIC || '', 'icon.png'), // Use new icon
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: false // Required for some Node APIs if used, but false is safer if possible. Keeping false as per current config check.
+      sandbox: false 
     },
   })
 
@@ -43,6 +73,15 @@ function createWindow() {
   } else {
     win.loadFile(path.join(RENDERER_DIST, 'index.html'))
   }
+  
+  // Wait for content to be ready before showing
+  win.once('ready-to-show', () => {
+      // Simulate splash delay if things load too fast (optional)
+      setTimeout(() => {
+          splash?.destroy();
+          win?.show();
+      }, 2500); // 2.5 seconds minimum splash
+  });
 }
 
 app.on('window-all-closed', () => {
@@ -53,11 +92,14 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
+    createMainWindow() // On re-activate, we just open main
   }
 })
 
-// --- Data Persistence ---
+app.whenReady().then(() => {
+    createSplashWindow();
+    createMainWindow();
+});
 
 // --- Data Persistence ---
 
@@ -567,7 +609,7 @@ autoUpdater.on('update-downloaded', (info) => {
     win?.webContents.send('update-downloaded', info);
 });
 
-app.whenReady().then(createWindow)
+
 
 // --- Templates & Import ---
 
