@@ -1,16 +1,17 @@
 {
   "name": "qruns",
   "description": "A modern, efficient runbook executor for operations teams.",
-  "version": "1.3.23",
+  "version": "1.3.24",
   "author": "Pablo E. Basualdo",
   "main": "dist-electron/main.js",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "dist": "npm run build && electron-builder",
+    "dist": "npm run build && npm run generate-assets && electron-builder",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate-assets": "node scripts/generate-assets.cjs"
   },
   "build": {
     "appId": "com.qruns.app",
@@ -18,11 +19,11 @@
     "copyright": "Copyright © 2026",
     "compression": "maximum",
     "directories": {
-      "output": "dist"
+      "output": "release"
     },
     "files": [
       "dist-electron/**/*",
-      "dist/**/*",
+      "dist_renderer/**/*",
       "!**/*.map",
       "!**/*.d.ts",
       "!**/node_modules/**/README.md",
@@ -85,11 +86,12 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "jimp": "^1.6.0",
     "rimraf": "^6.1.2",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4",
-    "vite-plugin-electron": "^0.29.0",
-    "vite-plugin-electron-renderer": "^0.14.6"
+    "vite": "^6.0.0",
+    "vite-plugin-electron": "^0.28.0",
+    "vite-plugin-electron-renderer": "^0.14.5"
   }
 }

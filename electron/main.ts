@@ -1,12 +1,13 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs'
 import { exec } from 'node:child_process'
-import log from 'electron-log';
+// import log from 'electron-log';
+import type { QRun, QRunStep } from './types.js';
 
-log.transports.file.level = 'info';
-log.info('App starting...');
+// log.transports.file.level = 'info';
+console.log('App starting...');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -14,12 +15,16 @@ process.env.APP_ROOT = path.join(__dirname, '..')
 
 export const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist-electron')
-export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
+export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist_renderer')
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
 
+console.log('VITE_DEV_SERVER_URL:', VITE_DEV_SERVER_URL);
+console.log('RENDERER_DIST:', RENDERER_DIST);
+
 // Splash Screen Logic
 let splash: BrowserWindow | null;
+let win: BrowserWindow | null;
 
 function createSplashWindow() {
   splash = new BrowserWindow({
@@ -31,20 +36,14 @@ function createSplashWindow() {
     icon: path.join(process.env.VITE_PUBLIC || '', 'icon.png'),
   });
   
-  const splashPath = path.join(process.env.VITE_PUBLIC || '', 'splash.html');
-  // Check if we are in production or dev to resolve path correctly
-  // In prod, splash.html might be in resources or next to main.js? 
-  // Actually, we are copying it to dist? No, we haven't configured build to copy it yet EXCEPT if we put it in public?
-  // Easier: simpler approach. Content is simple.
-  // But let's try to load the file we just created.
-  
-  // In dev: c:\OfflineRepos\qruns\electron\splash.html
-  // In prod: resources/app/electron/splash.html (if valid)
-  
-  splash.loadFile(splashPath).catch(() => {
-     // Fallback if file not found (e.g. dist struct issues), load simple html
-     splash?.loadURL('data:text/html;charset=utf-8,<html><body style="background:#0F172A;color:white;display:flex;justify-content:center;align-items:center;"><h1>Quick Runbooks</h1></body></html>');
-  });
+  if (VITE_DEV_SERVER_URL) {
+    splash.loadURL(`${VITE_DEV_SERVER_URL}/splash.html`);
+  } else {
+    const splashPath = path.join(RENDERER_DIST, 'splash.html');
+    splash.loadFile(splashPath).catch(() => {
+       splash?.loadURL('data:text/html;charset=utf-8,<html><body style="background:#0F172A;color:white;display:flex;justify-content:center;align-items:center;"><h1>Quick Runbooks</h1></body></html>');
+    });
+  }
   
   splash.center();
 }
@@ -57,7 +56,7 @@ function createMainWindow() {
     show: false, // Hide initially
     icon: path.join(process.env.VITE_PUBLIC || '', 'icon.png'), // Use new icon
     webPreferences: {
-      preload: path.join(__dirname, 'preload.cjs'),
+      preload: path.join(__dirname, 'preload.mjs'),
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: false 
@@ -69,9 +68,12 @@ function createMainWindow() {
   })
 
   if (VITE_DEV_SERVER_URL) {
-    win.loadURL(VITE_DEV_SERVER_URL)
+    console.log(`Loading URL: ${VITE_DEV_SERVER_URL}`);
+    win.loadURL(VITE_DEV_SERVER_URL).catch(e => console.error('Failed to load URL', e))
   } else {
-    win.loadFile(path.join(RENDERER_DIST, 'index.html'))
+    const indexPath = path.join(RENDERER_DIST, 'index.html');
+    console.log(`Loading File: ${indexPath}`);
+    win.loadFile(indexPath).catch(e => console.error('Failed to load file', e))
   }
   
   // Wait for content to be ready before showing
@@ -136,7 +138,7 @@ function getConfig() {
 }
 
 // Helper to save configuration
-function saveConfig(config: any) {
+function saveConfig(config: Partial<QRun>) {
   try {
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
   } catch (e) {
@@ -159,11 +161,11 @@ function ensureSourcesExist(sources: string[]) {
 
 // --- File Parsers ---
 
-function parseRunbookFile(filePath: string): any | null {
+function parseRunbookFile(filePath: string): QRun | null {
   try {
     const ext = path.extname(filePath).toLowerCase();
     const content = fs.readFileSync(filePath, 'utf-8');
-    let data: any = {};
+    let data: Partial<QRun> = {};
 
     if (ext === '.json') {
       data = JSON.parse(content);
@@ -179,7 +181,7 @@ function parseRunbookFile(filePath: string): any | null {
       }
     }
 
-    if (!data) return null;
+    if (!data.id) return null;
 
     // --- Validation & Defaults ---
     data.sourcePath = path.dirname(filePath);
@@ -225,7 +227,7 @@ function parseRunbookFile(filePath: string): any | null {
         data.steps = [];
     }
 
-    return data;
+    return data as QRun;
 
   } catch (err) {
     console.error(`Error parsing file ${filePath}`, err);
@@ -233,10 +235,10 @@ function parseRunbookFile(filePath: string): any | null {
   return null;
 }
 
-function parseMarkdownSteps(content: string): any[] {
-  const steps: any[] = [];
+function parseMarkdownSteps(content: string): QRunStep[] {
+  const steps: QRunStep[] = [];
   const lines = content.split('\n');
-  let currentStep: any = null;
+  let currentStep: QRunStep | null = null;
 
   lines.forEach(line => {
     if (line.startsWith('## ')) {
@@ -279,7 +281,7 @@ function parseMarkdownSteps(content: string): any[] {
   
   // Clean up empty code endings
   steps.forEach(s => {
-      s.content.forEach((c: any) => {
+      s.content.forEach((c) => {
           if (c.type === 'code' && c.code.endsWith('```')) {
               c.code = c.code.substring(0, c.code.length - 3).trim();
           }
@@ -290,16 +292,16 @@ function parseMarkdownSteps(content: string): any[] {
   return steps;
 }
 
-function serializeToMarkdown(runbook: any): string {
+function serializeToMarkdown(runbook: QRun): string {
     const { steps, sourcePath, format, ...meta } = runbook;
     // Don't save steps in frontmatter
     const frontmatter = { ...meta };
     
     let body = '';
     if (steps && steps.length > 0) {
-        body = steps.map((s: any) => {
+        body = steps.map((s: QRunStep) => {
             let stepContent = `## ${s.title}\n\n`;
-            s.content.forEach((c: any) => {
+            s.content.forEach((c) => {
                 if (c.type === 'code') {
                     stepContent += '```' + (c.language || '') + '\n' + c.code + '\n```\n\n';
                 } else if (c.type === 'list') {
@@ -357,7 +359,7 @@ ipcMain.handle('get-runbooks', async () => {
     const sources = config.sources;
     ensureSourcesExist(sources);
     
-    let allRunbooks: any[] = [];
+    let allRunbooks: QRun[] = [];
 
     sources.forEach((dir: string) => {
         if (fs.existsSync(dir)) {
@@ -379,7 +381,7 @@ ipcMain.handle('get-runbooks', async () => {
 });
 
 // Save runbook
-ipcMain.handle('save-runbook', async (_, runbook) => {
+ipcMain.handle('save-runbook', async (_, runbook: QRun) => {
   try {
     const config = getConfig();
     // Use existing path or default to first source
@@ -410,7 +412,7 @@ ipcMain.handle('save-runbook', async (_, runbook) => {
 });
 
 // Delete runbook
-ipcMain.handle('delete-runbook', async (_, runbook) => {
+ipcMain.handle('delete-runbook', async (_, runbook: QRun) => {
   try {
     // We need the full object or at least source/format/id to delete correct file
     const config = getConfig();
@@ -492,7 +494,7 @@ ipcMain.handle('clone-repository', async (_, url, options = {}) => {
                 };
             }
 
-            exec(command, execOptions, (error, stdout, stderr) => {
+            exec(command, execOptions, (error, _stdout, stderr) => {
                 // In interactive mode, 'start' returns success if the WINDOW opened, not if git succeeded.
                 // So we must verify if the directory exists after execution.
                 
@@ -541,17 +543,16 @@ ipcMain.handle('clone-repository', async (_, url, options = {}) => {
 
 // --- Auto-Update ---
 
-import { autoUpdater } from "electron-updater"
-import { shell } from "electron";
+import { autoUpdater } from "electron-updater";
 
-autoUpdater.logger = log;
+// autoUpdater.logger = log;
 autoUpdater.autoDownload = false; // We will manually trigger download
 autoUpdater.autoInstallOnAppQuit = true;
 
 ipcMain.handle('check-for-updates', () => {
-  log.info('Manual check for updates triggered');
+  console.log('Manual check for updates triggered');
   if (process.env.VITE_DEV_SERVER_URL) {
-      log.info('Skipping update check in dev mode');
+      console.log('Skipping update check in dev mode');
       // Mock an update available for testing UI
       // win?.webContents.send('update-available', { version: '9.9.9' });
       return; 
@@ -560,17 +561,17 @@ ipcMain.handle('check-for-updates', () => {
 });
 
 ipcMain.handle('start-auto-download', () => {
-    log.info('User requested Auto-Update. Starting download...');
+    console.log('User requested Auto-Update. Starting download...');
     autoUpdater.downloadUpdate();
 });
 
-ipcMain.handle('start-manual-download', (event, url) => {
+ipcMain.handle('start-manual-download', (_event, url) => {
     // SECURITY: Only allow HTTPS protocol
     if (!url || !url.startsWith('https://')) {
-        log.warn('Blocked unsafe manual download URL:', url);
+        console.warn('Blocked unsafe manual download URL:', url);
         return; 
     }
-    log.info('User requested Manual Update. Opening URL:', url);
+    console.log('User requested Manual Update. Opening URL:', url);
     shell.openExternal(url);
 });
 
@@ -580,32 +581,32 @@ ipcMain.handle('quit-and-install', () => {
 
 // Event forwarding
 autoUpdater.on('checking-for-update', () => {
-    log.info('Checking for update...');
+    console.log('Checking for update...');
 });
 
-autoUpdater.on('update-available', (info) => {
-    log.info('Update available:', info);
+autoUpdater.on('update-available', (info: { version: string }) => {
+    console.log('Update available:', info);
     win?.webContents.send('update-available', info);
     // DO NOT auto download. Wait for user action.
 });
 
-autoUpdater.on('update-not-available', (info) => {
-    log.info('Update not available:', info);
+autoUpdater.on('update-not-available', (info: { version: string }) => {
+    console.log('Update not available:', info);
     win?.webContents.send('update-not-available', info);
 });
 
-autoUpdater.on('error', (err) => {
-    log.error('Update error:', err);
+autoUpdater.on('error', (err: Error) => {
+    console.error('Update error:', err);
     win?.webContents.send('update-error', err.toString());
 });
 
-autoUpdater.on('download-progress', (progressObj) => {
-    log.info('Download progress:', progressObj.percent);
+autoUpdater.on('download-progress', (progressObj: { percent: number }) => {
+    console.log('Download progress:', progressObj.percent);
     // Optionally send progress
 });
 
-autoUpdater.on('update-downloaded', (info) => {
-    log.info('Update downloaded:', info);
+autoUpdater.on('update-downloaded', (info: { version: string }) => {
+    console.log('Update downloaded:', info);
     win?.webContents.send('update-downloaded', info);
 });
 
@@ -679,7 +680,7 @@ ipcMain.handle('refresh-sources', async () => {
     try {
         const config = getConfig();
         const sources = config.sources || [];
-        const results: any[] = [];
+        const results: { source: string; success: boolean; error?: string; output?: string }[] = [];
 
         for (const dir of sources) {
             if (fs.existsSync(path.join(dir, '.git'))) {

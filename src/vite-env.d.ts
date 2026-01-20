@@ -1,26 +1,29 @@
-/// <reference types="vite/client" />
-/// <reference types="vite-plugin-electron/electron-env" />
+import type { QRun } from './types.js';
 
-interface Window {
-  electronAPI: {
-    getRunbooks: () => Promise<any[]>;
-    saveRunbook: (runbook: any) => Promise<{ success: boolean; error?: string }>;
-    deleteRunbook: (runbook: any) => Promise<{ success: boolean; error?: string }>;
-    getSources: () => Promise<string[]>;
-    addSource: () => Promise<{ success: boolean; sources?: string[] }>;
-    removeSource: (path: string) => Promise<{ success: boolean; sources?: string[] }>;
-    cloneRepository: (url: string, options?: { interactive?: boolean }) => Promise<{ success: boolean; sources?: string[]; error?: string }>;
-    checkForUpdates: () => Promise<void>;
-    quitAndInstall: () => Promise<void>;
-    onUpdateAvailable: (callback: (info: any) => void) => void;
-    onUpdateDownloaded: (callback: (info: any) => void) => void;
-    onUpdateNotAvailable: (callback: () => void) => void;
-    onUpdateError: (callback: (err: any) => void) => void;
-    downloadTemplate: (format: 'json' | 'md') => Promise<{ success: boolean; error?: string }>;
-    importRunbook: () => Promise<{ success: boolean; error?: string }>;
-    startAutoDownload: () => Promise<void>;
-    startManualDownload: (url: string) => Promise<void>;
-    getAppVersion: () => Promise<string>;
-    refreshSources: () => Promise<{ success: boolean; results?: any[]; error?: string }>;
+declare global {
+  interface Window {
+    electronAPI: {
+      getRunbooks: () => Promise<QRun[]>;
+      saveRunbook: (runbook: QRun) => Promise<{ success: boolean; error?: string }>;
+      deleteRunbook: (runbook: QRun) => Promise<{ success: boolean; error?: string }>;
+      getSources: () => Promise<string[]>;
+      addSource: () => Promise<{ success: boolean; sources?: string[] }>;
+      removeSource: (path: string) => Promise<{ success: boolean; sources?: string[] }>;
+      cloneRepository: (url: string, options?: { interactive?: boolean }) => Promise<{ success: boolean; sources?: string[]; error?: string }>;
+      checkForUpdates: () => Promise<void>;
+      quitAndInstall: () => Promise<void>;
+      onUpdateAvailable: (callback: (info: { version: string }) => void) => void;
+      onUpdateDownloaded: (callback: (info: { version: string }) => void) => void;
+      onUpdateNotAvailable: (callback: (info: { version: string }) => void) => void;
+      onUpdateError: (callback: (err: string) => void) => void;
+      downloadTemplate: (format: 'json' | 'md') => Promise<{ success: boolean; error?: string }>;
+      importRunbook: () => Promise<{ success: boolean; error?: string }>;
+      startAutoDownload: () => Promise<void>;
+      startManualDownload: (url: string) => Promise<void>;
+      getAppVersion: () => Promise<string>;
+      refreshSources: () => Promise<{ success: boolean; results?: { source: string; success: boolean; error?: string; output?: string }[]; error?: string }>;
+    }
   }
 }
+
+export {};
