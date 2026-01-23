@@ -22,6 +22,10 @@ declare global {
       startManualDownload: (url: string) => Promise<void>;
       getAppVersion: () => Promise<string>;
       refreshSources: () => Promise<{ success: boolean; results?: { source: string; success: boolean; error?: string; output?: string }[]; error?: string }>;
+      appReady: () => void;
+      installExamples: () => Promise<{ success: boolean; count?: number; error?: string }>;
+      getAppConfig: () => Promise<any>;
+      setAppConfig: (config: any) => Promise<any>;
     }
   }
 }

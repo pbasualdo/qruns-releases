@@ -1,0 +1,82 @@
+{
+  "title": "Kubernetes Pod Debugging",
+  "id": "k8s-pod-debug",
+  "service": "Container",
+  "category": "Maintenance",
+  "tags": ["k8s", "kubernetes", "debug", "crashloop"],
+  "shortDescription": "Diagnose crashing or pending Kubernetes pods.",
+  "fullDescription": "Workflow for troubleshooting Kubernetes pod states like CrashLoopBackOff, Pending, or Error.",
+  "type": "qrun",
+  "steps": [
+    {
+      "title": "List All Pods",
+      "content": [
+        { "type": "text", "text": "Identify pods in non-Running state." },
+        { "type": "code", "language": "bash", "code": "kubectl get pods -A | grep -v Running" }
+      ]
+    },
+    {
+      "title": "Describe Pod",
+      "content": [
+        { "type": "text", "text": "Get detailed event info for the failing pod." },
+        { "type": "code", "language": "bash", "code": "kubectl describe pod <POD_NAME> -n <NAMESPACE>" }
+      ]
+    },
+    {
+      "title": "Check Pod Logs",
+      "content": [
+        { "type": "text", "text": "View standard output logs." },
+        { "type": "code", "language": "bash", "code": "kubectl logs <POD_NAME> -n <NAMESPACE> --previous" }
+      ]
+    },
+    {
+      "title": "Check Node Resources",
+      "content": [
+        { "type": "text", "text": "Verify if the node has enough CPU/Memory." },
+        { "type": "code", "language": "bash", "code": "kubectl top node" }
+      ]
+    },
+    {
+      "title": "Check Deployment Status",
+      "content": [
+        { "type": "text", "text": "Ensure the deployment and replicaset are healthy." },
+        { "type": "code", "language": "bash", "code": "kubectl get deploy -n <NAMESPACE>" }
+      ]
+    },
+    {
+      "title": "Exec into Container",
+      "content": [
+        { "type": "text", "text": "If running, shell in to investigate manually." },
+        { "type": "code", "language": "bash", "code": "kubectl exec -it <POD_NAME> -n <NAMESPACE> -- /bin/sh" }
+      ]
+    },
+    {
+      "title": "Port Forward for Testing",
+      "content": [
+        { "type": "text", "text": "Expose the pod locally to test endpoints." },
+        { "type": "code", "language": "bash", "code": "kubectl port-forward <POD_NAME> 8080:80 -n <NAMESPACE>" }
+      ]
+    },
+    {
+      "title": "Check Ingress",
+      "content": [
+        { "type": "text", "text": "Verify ingress rules are correctly routing traffic." },
+        { "type": "code", "language": "bash", "code": "kubectl get ingress -n <NAMESPACE>" }
+      ]
+    },
+    {
+      "title": "Review ConfigMaps/Secrets",
+      "content": [
+        { "type": "text", "text": "Ensure mounted configuration exists and is valid." },
+        { "type": "code", "language": "bash", "code": "kubectl get configmap -n <NAMESPACE>" }
+      ]
+    },
+    {
+      "title": "Restart Pod",
+      "content": [
+        { "type": "text", "text": "Force a restart by deleting the pod." },
+        { "type": "code", "language": "bash", "code": "kubectl delete pod <POD_NAME> -n <NAMESPACE>" }
+      ]
+    }
+  ]
+}

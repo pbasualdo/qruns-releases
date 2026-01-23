@@ -33,6 +33,7 @@ function createSplashWindow() {
     transparent: true,
     frame: false,
     alwaysOnTop: true,
+    backgroundColor: '#0f1115', // Synced with app bg
     icon: path.join(process.env.VITE_PUBLIC || '', 'icon.png'),
   });
   
@@ -52,11 +53,12 @@ function createMainWindow() {
   win = new BrowserWindow({
     width: 1200,
     height: 800,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#0f1115', // Synced with app bg
     show: false, // Hide initially
+    autoHideMenuBar: true, // Hide menu bar
     icon: path.join(process.env.VITE_PUBLIC || '', 'icon.png'), // Use new icon
     webPreferences: {
-      preload: path.join(__dirname, 'preload.mjs'),
+      preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: false 
@@ -76,13 +78,32 @@ function createMainWindow() {
     win.loadFile(indexPath).catch(e => console.error('Failed to load file', e))
   }
   
-  // Wait for content to be ready before showing
+  // Wait for renderer to signal readiness
+  ipcMain.once('app-ready', () => {
+      if (win && splash) {
+          win.show();
+          setTimeout(() => {
+              if (splash) {
+                  splash.destroy();
+                  splash = null;
+              }
+          }, 100); // 100ms buffer to ensure main window painted
+      }
+  });
+
+  // Fallback if renderer fails to signal (safety)
   win.once('ready-to-show', () => {
-      // Simulate splash delay if things load too fast (optional)
       setTimeout(() => {
-          splash?.destroy();
-          win?.show();
-      }, 2500); // 2.5 seconds minimum splash
+          if (splash) {
+              win?.show();
+              setTimeout(() => {
+                if (splash) {
+                    splash.destroy();
+                    splash = null;
+                }
+              }, 100);
+          }
+      }, 5000); // 5s fallback
   });
 }
 
@@ -129,12 +150,20 @@ function getConfig() {
         config.sources = [DEFAULT_DOCS_DIR];
       }
       
+      // Always try to initialize examples in the first source if available
+      // REMOVED for user-controlled flow
+      // if (config.sources.length > 0) {
+      //    initializeExampleRunbooks(config.sources[0]);
+      // }
+
       return config;
     }
   } catch (e) {
     console.error("Failed to read config", e);
   }
-  return { sources: [DEFAULT_DOCS_DIR] };
+  // Default first run - Do NOT auto-install anymore
+  // initializeExampleRunbooks(DEFAULT_DOCS_DIR);
+  return { sources: [DEFAULT_DOCS_DIR], firstRunComplete: false };
 }
 
 // Helper to save configuration
@@ -157,6 +186,43 @@ function ensureSourcesExist(sources: string[]) {
       }
     }
   });
+}
+
+// Initializer for Example Runbooks (Renamed/Refactored)
+function installExamples(targetDir: string): { success: boolean; count: number; error?: string } {
+    try {
+        if (!fs.existsSync(targetDir)) {
+             fs.mkdirSync(targetDir, { recursive: true });
+        }
+        
+        console.log("Installing example runbooks to:", targetDir);
+        
+        const examplesPath = path.join(process.env.VITE_PUBLIC || '', 'examples');
+        let count = 0;
+        
+        if (fs.existsSync(examplesPath)) {
+            const exampleFiles = fs.readdirSync(examplesPath);
+            exampleFiles.forEach(file => {
+                const srcPath = path.join(examplesPath, file);
+                const destPath = path.join(targetDir, file);
+                
+                // Copy if missing (don't overwrite user changes)
+                if (!fs.existsSync(destPath)) {
+                    fs.copyFileSync(srcPath, destPath);
+                    console.log(`Copied example: ${file}`);
+                    count++;
+                }
+            });
+            return { success: true, count };
+        } else {
+             console.warn("Example runbooks directory not found:", examplesPath);
+             return { success: false, count: 0, error: "Examples directory not found" };
+        }
+
+    } catch (e) {
+        console.error("Failed to install example runbooks", e);
+        return { success: false, count: 0, error: (e as Error).message };
+    }
 }
 
 // --- File Parsers ---
@@ -543,7 +609,8 @@ ipcMain.handle('clone-repository', async (_, url, options = {}) => {
 
 // --- Auto-Update ---
 
-import { autoUpdater } from "electron-updater";
+import pkg from 'electron-updater';
+const { autoUpdater } = pkg;
 
 // autoUpdater.logger = log;
 autoUpdater.autoDownload = false; // We will manually trigger download
@@ -625,9 +692,45 @@ fullDescription: A full description.
 type: qrun
 ---
 
-## Step 1
+## 1. Step One
 
-Content here.
+Description of step one.
+
+## 2. Step Two
+
+Description of step two.
+
+## 3. Step Three
+
+Description of step three.
+
+## 4. Step Four
+
+Description of step four.
+
+## 5. Step Five
+
+Description of step five.
+
+## 6. Step Six
+
+Description of step six.
+
+## 7. Step Seven
+
+Description of step seven.
+
+## 8. Step Eight
+
+Description of step eight.
+
+## 9. Step Nine
+
+Description of step nine.
+
+## 10. Step Ten
+
+Description of step ten.
 `;
 
 const TEMPLATE_JSON = `{
@@ -640,12 +743,16 @@ const TEMPLATE_JSON = `{
   "fullDescription": "A full description.",
   "type": "qrun",
   "steps": [
-     {
-       "title": "Step 1",
-       "content": [
-         { "type": "text", "text": "Content here" }
-       ]
-     }
+     { "title": "1. Step One", "content": [{ "type": "text", "text": "Content here" }] },
+     { "title": "2. Step Two", "content": [{ "type": "text", "text": "Content here" }] },
+     { "title": "3. Step Three", "content": [{ "type": "text", "text": "Content here" }] },
+     { "title": "4. Step Four", "content": [{ "type": "text", "text": "Content here" }] },
+     { "title": "5. Step Five", "content": [{ "type": "text", "text": "Content here" }] },
+     { "title": "6. Step Six", "content": [{ "type": "text", "text": "Content here" }] },
+     { "title": "7. Step Seven", "content": [{ "type": "text", "text": "Content here" }] },
+     { "title": "8. Step Eight", "content": [{ "type": "text", "text": "Content here" }] },
+     { "title": "9. Step Nine", "content": [{ "type": "text", "text": "Content here" }] },
+     { "title": "10. Step Ten", "content": [{ "type": "text", "text": "Content here" }] }
   ]
 }`;
 
@@ -708,6 +815,39 @@ ipcMain.handle('refresh-sources', async () => {
     } catch (e) {
         return { success: false, error: (e as Error).message };
     }
+});
+
+// IPC: Install Examples
+ipcMain.handle('install-examples', async () => {
+    try {
+        const config = getConfig();
+        const targetDir = (config.sources && config.sources.length > 0) ? config.sources[0] : DEFAULT_DOCS_DIR;
+        
+        const result = installExamples(targetDir);
+        
+        // Mark first run as complete if successful (or even if partly successful)
+        if (result.success) {
+            config.firstRunComplete = true;
+            saveConfig(config);
+        }
+        
+        return result;
+    } catch (e) {
+        return { success: false, error: (e as Error).message };
+    }
+});
+
+// IPC: Get App Config
+ipcMain.handle('get-app-config', () => {
+    return getConfig();
+});
+
+// IPC: Set App Config
+ipcMain.handle('set-app-config', (_, newConfig) => {
+    const config = getConfig();
+    const updated = { ...config, ...newConfig };
+    saveConfig(updated);
+    return updated;
 });
 
 // Expose app version

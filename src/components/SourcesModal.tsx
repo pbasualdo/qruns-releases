@@ -197,6 +197,21 @@ export const SourcesModal: React.FC<SourcesModalProps> = ({ isOpen, onClose, onU
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '5px' }}><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l5 1.55a9 9 0 0 0 13.9 4.95"></path></svg>
                             Sync Sources
                         </button>
+                        <button className="btn btn-secondary" onClick={async () => {
+                            if (window.electronAPI) {
+                                if (confirm("Install example templates? This will copy default runbooks to your first source folder.")) {
+                                    const res = await window.electronAPI.installExamples();
+                                    if (res.success) {
+                                        alert(`Installed ${res.count} examples.`);
+                                        onUpdate();
+                                    } else {
+                                        alert('Error: ' + res.error);
+                                    }
+                                }
+                            }
+                        }}>
+                             Install Templates
+                        </button>
                     </div>
                     <div className="footer-group">
                         <button className="btn btn-secondary" onClick={handleAdd}>+ Add Folder</button>

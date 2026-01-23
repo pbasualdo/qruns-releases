@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { mockQRuns } from '../data/mockQRuns';
 import type { QRun, QRunStep } from '../types';
 import { RunbookEditor } from './RunbookEditor';
@@ -21,6 +21,7 @@ export const QRunList: React.FC = () => {
   const [isSourcesModalOpen, setIsSourcesModalOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [availableSources, setAvailableSources] = useState<string[]>([]);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   
   // -- Editor State --
   const [isEditing, setIsEditing] = useState(false);
@@ -31,6 +32,14 @@ export const QRunList: React.FC = () => {
   const [updateInfo, setUpdateInfo] = useState<any>(null);
 
     const [appVersion, setAppVersion] = useState<string>('');
+
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (contentRef.current) {
+            contentRef.current.scrollTop = 0;
+        }
+    }, [selectedRunId]);
 
     React.useEffect(() => {
         if (window.electronAPI) {
@@ -48,12 +57,12 @@ export const QRunList: React.FC = () => {
         ]);
         setRunbooks(loadedRuns);
         setAvailableSources(sources);
-        console.log('Sources loaded:', sources);
-
-        // Check for updates shortly after load
-        setTimeout(() => {
-             window.electronAPI.checkForUpdates();
-        }, 5000);
+        if (window.electronAPI) {
+           window.electronAPI.appReady();
+           setTimeout(() => {
+                window.electronAPI.checkForUpdates();
+           }, 5000);
+        }
       } catch (e) {
         console.error("Failed to load runbooks/sources from Electron", e);
       }
@@ -85,6 +94,14 @@ export const QRunList: React.FC = () => {
             console.log('Update not available');
             setUpdateStatus('not-available');
             setTimeout(() => setUpdateStatus(null), 3000);
+        });
+
+        // Check for first run
+        window.electronAPI.getAppConfig().then(config => {
+            if (!config.firstRunComplete) {
+                // Show prompt
+                setShowInstallPrompt(true);
+            }
         });
     }
   }, []);
@@ -229,7 +246,9 @@ export const QRunList: React.FC = () => {
             }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
             </button>
-           <button className="icon-btn" title="Help" onClick={() => setIsHelpOpen(true)}>?</button>
+           <button className="icon-btn" title="Help / Guide" onClick={() => setIsHelpOpen(true)}>
+               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+           </button>
         </div>
       </header>
       
@@ -243,6 +262,44 @@ export const QRunList: React.FC = () => {
         isOpen={isHelpOpen} 
         onClose={() => setIsHelpOpen(false)} 
       />
+
+      <HelpModal 
+        isOpen={isHelpOpen} 
+        onClose={() => setIsHelpOpen(false)} 
+      />
+
+      {showInstallPrompt && (
+          <div className="modal-overlay">
+              <div className="modal-content" style={{maxWidth: '400px'}}>
+                  <div className="modal-header">
+                      <h2>Welcome to Quick Runbooks!</h2>
+                  </div>
+                  <div className="modal-body">
+                      <p>Do you want to install a set of <strong>example templates</strong> (SQL, Network, HR, etc.) to help you get started?</p>
+                      <p className="text-tertiary text-small">You can always install them later from 'Manage Sources'.</p>
+                  </div>
+                  <div className="modal-footer">
+                      <button className="btn btn-secondary" onClick={() => {
+                          setShowInstallPrompt(false);
+                          if (window.electronAPI) window.electronAPI.setAppConfig({ firstRunComplete: true });
+                      }}>No, thanks</button>
+                      <button className="btn btn-primary" onClick={async () => {
+                          if (window.electronAPI) {
+                              const res = await window.electronAPI.installExamples();
+                              if (res.success) {
+                                  alert(`Installed ${res.count} examples!`);
+                                  await loadRunbooks();
+                              } else {
+                                  alert('Error installing examples: ' + res.error);
+                              }
+                              // Config handles setting firstRunComplete on server side on success, but we can double check
+                              setShowInstallPrompt(false);
+                          }
+                      }}>Yes, install them</button>
+                  </div>
+              </div>
+          </div>
+      )}
 
       {/* 2. App Body */}
       <div className="app-body">
@@ -435,7 +492,7 @@ export const QRunList: React.FC = () => {
                        </div>
                    </div>
 
-                   <div className="view-content">
+                   <div className="view-content" ref={contentRef}>
                       {selectedRun.steps.map((step, idx) => (
                          <div key={idx} className="step-item">
                             <div className="step-marker">

@@ -22,4 +22,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startManualDownload: (url: string) => ipcRenderer.invoke('start-manual-download', url),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   refreshSources: () => ipcRenderer.invoke('refresh-sources'),
+  appReady: () => ipcRenderer.send('app-ready'),
+  
+  // Example & Config
+  installExamples: () => ipcRenderer.invoke('install-examples'),
+  getAppConfig: () => ipcRenderer.invoke('get-app-config'),
+  setAppConfig: (config: any) => ipcRenderer.invoke('set-app-config', config),
 })

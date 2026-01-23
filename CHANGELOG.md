@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.25] - 2026-01-23
+
+### Fixed
+- **UI**: Removed `max-width` constraint on runbook detail view, allowing it to expand fully.
+- **UI**: Fixed scroll position not resetting when switching runbooks.
+- **UX**: Implemented user-controlled mechanism for installing example templates (Prompt on first run + "Install Templates" button).
+
 ## [1.3.24] - 2026-01-20
 
 ### Fixed
