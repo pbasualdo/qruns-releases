@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getRunbooks: () => ipcRenderer.invoke('get-runbooks'),
   saveRunbook: (runbook: QRun) => ipcRenderer.invoke('save-runbook', runbook),
   deleteRunbook: (runbook: QRun) => ipcRenderer.invoke('delete-runbook', runbook),
+  getChangelog: () => ipcRenderer.invoke('get-changelog'),
   getSources: () => ipcRenderer.invoke('get-sources'),
   addSource: () => ipcRenderer.invoke('add-source'),
   removeSource: (path: string) => ipcRenderer.invoke('remove-source', path),

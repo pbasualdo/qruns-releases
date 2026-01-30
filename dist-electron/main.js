@@ -18865,13 +18865,11 @@ function createMainWindow() {
     autoHideMenuBar: true,
     // Hide menu bar
     icon: path.join(process.env.VITE_PUBLIC || "", "icon.png"),
-    // Use new icon
     webPreferences: {
-      preload: path.join(__dirname$1, "preload.js"),
+      preload: path.join(__dirname$1, "preload.cjs"),
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: app.isPackaged
-      // webSecurity: !VITE_DEV_SERVER_URL // No longer needed thanks to custom protocol
+      sandbox: false
     }
   });
   win.webContents.on("did-finish-load", () => {
@@ -18991,7 +18989,11 @@ function getConfig() {
 }
 function saveConfig(config) {
   try {
-    fs$1.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
+    const tempFile = CONFIG_FILE + ".tmp";
+    fs$1.writeFileSync(tempFile, JSON.stringify(config, null, 2), "utf-8");
+    if (fs$1.existsSync(tempFile)) {
+      fs$1.renameSync(tempFile, CONFIG_FILE);
+    }
   } catch (e) {
     console.error("Failed to write config", e);
   }
@@ -19198,18 +19200,26 @@ ipcMain.handle("get-sources", () => {
   return getConfig().sources;
 });
 ipcMain.handle("add-source", async () => {
-  if (!win) return { success: false };
-  const result = await dialog.showOpenDialog(win, {
-    properties: ["openDirectory"]
-  });
-  if (!result.canceled && result.filePaths.length > 0) {
-    const newPath = result.filePaths[0];
-    const config = getConfig();
-    if (!config.sources.includes(newPath)) {
-      config.sources.push(newPath);
-      saveConfig(config);
+  const parent = win || BrowserWindow.getFocusedWindow();
+  if (!parent) {
+    return { success: false, error: "No parent window found. Please ensure the app is in focus." };
+  }
+  try {
+    const result = await dialog.showOpenDialog(parent, {
+      properties: ["openDirectory"],
+      title: "Select Runbooks Folder"
+    });
+    if (!result.canceled && result.filePaths.length > 0) {
+      const newPath = result.filePaths[0];
+      const config = getConfig();
+      if (!config.sources.includes(newPath)) {
+        config.sources.push(newPath);
+        saveConfig(config);
+      }
+      return { success: true, sources: config.sources };
     }
-    return { success: true, sources: config.sources };
+  } catch (err) {
+    console.error("[IPC] add-source error:", err);
   }
   return { success: false };
 });
@@ -19244,6 +19254,18 @@ ipcMain.handle("get-runbooks", async () => {
   } catch (error2) {
     console.error("Error reading runbooks:", error2);
     return [];
+  }
+});
+ipcMain.handle("get-changelog", async () => {
+  try {
+    const changelogPath = path.join(process.env.APP_ROOT || app.getAppPath(), "CHANGELOG.md");
+    if (fs$1.existsSync(changelogPath)) {
+      return fs$1.readFileSync(changelogPath, "utf8");
+    }
+    return "No changelog found at " + changelogPath;
+  } catch (e) {
+    console.error("Error reading changelog:", e);
+    return "Error loading changelog: " + e.message;
   }
 });
 ipcMain.handle("save-runbook", async (_, runbook) => {
@@ -19469,11 +19491,11 @@ Description of step nine.
 Description of step ten.
 `;
 ipcMain.handle("download-template", async () => {
-  if (!win) return { success: false, error: "No window" };
   try {
+    const parent = win || BrowserWindow.getFocusedWindow();
     const defaultName = "template.md";
     const content = TEMPLATE_MD;
-    const { filePath } = await dialog.showSaveDialog(win, {
+    const { filePath } = await dialog.showSaveDialog(parent, {
       title: "Download Template",
       defaultPath: defaultName,
       filters: [
@@ -19547,9 +19569,10 @@ ipcMain.handle("get-app-version", () => {
   return app.getVersion();
 });
 ipcMain.handle("import-file", async () => {
-  if (!win) return { success: false, error: "No window" };
+  const parent = win || BrowserWindow.getFocusedWindow();
+  if (!parent) return { success: false, error: "No window found" };
   try {
-    const { filePaths } = await dialog.showOpenDialog(win, {
+    const { canceled, filePaths } = await dialog.showOpenDialog(parent, {
       filters: [{ name: "Runbooks", extensions: ["json", "md"] }],
       properties: ["openFile"]
     });
@@ -19575,9 +19598,10 @@ ipcMain.handle("import-file", async () => {
   }
 });
 ipcMain.handle("qrun:pick-image", async (_, targetDir) => {
-  if (!win) return { success: false, error: "No window" };
+  const parent = win || BrowserWindow.getFocusedWindow();
+  if (!parent) return { success: false, error: "No window" };
   try {
-    const { filePaths } = await dialog.showOpenDialog(win, {
+    const { canceled, filePaths } = await dialog.showOpenDialog(parent, {
       title: "Pick an image",
       filters: [
         { name: "Images", extensions: ["jpg", "png", "gif", "webp", "jpeg"] }

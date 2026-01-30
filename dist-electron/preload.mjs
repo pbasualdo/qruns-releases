@@ -1,9 +1,11 @@
 "use strict";
 const electron = require("electron");
+console.log("[Preload] Script starting...");
 electron.contextBridge.exposeInMainWorld("electronAPI", {
   getRunbooks: () => electron.ipcRenderer.invoke("get-runbooks"),
   saveRunbook: (runbook) => electron.ipcRenderer.invoke("save-runbook", runbook),
   deleteRunbook: (runbook) => electron.ipcRenderer.invoke("delete-runbook", runbook),
+  getChangelog: () => electron.ipcRenderer.invoke("get-changelog"),
   getSources: () => electron.ipcRenderer.invoke("get-sources"),
   addSource: () => electron.ipcRenderer.invoke("add-source"),
   removeSource: (path) => electron.ipcRenderer.invoke("remove-source", path),

@@ -6,8 +6,9 @@ declare global {
       getRunbooks: () => Promise<QRun[]>;
       saveRunbook: (runbook: QRun) => Promise<{ success: boolean; error?: string }>;
       deleteRunbook: (runbook: QRun) => Promise<{ success: boolean; error?: string }>;
+      getChangelog: () => Promise<string>;
       getSources: () => Promise<string[]>;
-      addSource: () => Promise<{ success: boolean; sources?: string[] }>;
+      addSource: () => Promise<{ success: boolean; sources?: string[]; error?: string }>;
       removeSource: (path: string) => Promise<{ success: boolean; sources?: string[] }>;
       cloneRepository: (url: string, options?: { interactive?: boolean }) => Promise<{ success: boolean; sources?: string[]; error?: string }>;
       checkForUpdates: () => Promise<void>;

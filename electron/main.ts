@@ -4,7 +4,7 @@ import path from 'node:path'
 import fs from 'node:fs'
 import { exec } from 'node:child_process'
 // import log from 'electron-log';
-import type { QRun, QRunStep, CategoryConfig } from './types.js';
+import type { QRun, QRunStep } from './types.js';
 
 // log.transports.file.level = 'info';
 console.log('App starting...');
@@ -60,13 +60,12 @@ function createMainWindow() {
     backgroundColor: '#0f1115', // Synced with app bg
     show: false, // Hide initially
     autoHideMenuBar: true, // Hide menu bar
-    icon: path.join(process.env.VITE_PUBLIC || '', 'icon.png'), // Use new icon
+    icon: path.join(process.env.VITE_PUBLIC || '', 'icon.png'),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: app.isPackaged 
-      // webSecurity: !VITE_DEV_SERVER_URL // No longer needed thanks to custom protocol
+      sandbox: false,
     },
   })
 
@@ -223,9 +222,13 @@ function getConfig() {
 }
 
 // Helper to save configuration
-function saveConfig(config: Partial<QRun>) {
+function saveConfig(config: any) {
   try {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
+    const tempFile = CONFIG_FILE + '.tmp';
+    fs.writeFileSync(tempFile, JSON.stringify(config, null, 2), 'utf-8');
+    if (fs.existsSync(tempFile)) {
+        fs.renameSync(tempFile, CONFIG_FILE);
+    }
   } catch (e) {
     console.error("Failed to write config", e);
   }
@@ -491,21 +494,32 @@ ipcMain.handle('get-sources', () => {
 
 // Add Source
 ipcMain.handle('add-source', async () => {
-  if (!win) return { success: false };
-  const result = await dialog.showOpenDialog(win, {
-    properties: ['openDirectory']
-  });
-
-  if (!result.canceled && result.filePaths.length > 0) {
-    const newPath = result.filePaths[0];
-    const config = getConfig();
-    if (!config.sources.includes(newPath)) {
-        config.sources.push(newPath);
-        saveConfig(config);
+    // Robust parent window resolution
+    const parent = win || BrowserWindow.getFocusedWindow();
+    
+    if (!parent) {
+        return { success: false, error: 'No parent window found. Please ensure the app is in focus.' };
     }
-    return { success: true, sources: config.sources };
-  }
-  return { success: false };
+
+    try {
+        const result = await dialog.showOpenDialog(parent, {
+            properties: ['openDirectory'],
+            title: 'Select Runbooks Folder'
+        });
+
+        if (!result.canceled && result.filePaths.length > 0) {
+            const newPath = result.filePaths[0];
+            const config = getConfig();
+            if (!config.sources.includes(newPath)) {
+                config.sources.push(newPath);
+                saveConfig(config);
+            }
+            return { success: true, sources: config.sources };
+        }
+    } catch (err) {
+        console.error('[IPC] add-source error:', err);
+    }
+    return { success: false };
 });
 
 // Remove Source
@@ -549,6 +563,21 @@ ipcMain.handle('get-runbooks', async () => {
     console.error('Error reading runbooks:', error);
     return [];
   }
+});
+
+// Get Changelog
+ipcMain.handle('get-changelog', async () => {
+    try {
+        // Find CHANGELOG.md relative to app root
+        const changelogPath = path.join(process.env.APP_ROOT || app.getAppPath(), 'CHANGELOG.md');
+        if (fs.existsSync(changelogPath)) {
+            return fs.readFileSync(changelogPath, 'utf8');
+        }
+        return "No changelog found at " + changelogPath;
+    } catch (e) {
+        console.error("Error reading changelog:", e);
+        return "Error loading changelog: " + (e as Error).message;
+    }
 });
 
 // Save runbook
@@ -838,13 +867,12 @@ Description of step ten.
 
 
 ipcMain.handle('download-template', async () => {
-    if (!win) return { success: false, error: "No window" };
-    
     try {
+        const parent = win || BrowserWindow.getFocusedWindow();
         const defaultName = 'template.md';
         const content = TEMPLATE_MD;
 
-        const { filePath } = await dialog.showSaveDialog(win, {
+        const { filePath } = await dialog.showSaveDialog(parent!, {
             title: 'Download Template',
             defaultPath: defaultName,
             filters: [
@@ -937,10 +965,12 @@ ipcMain.handle('get-app-version', () => {
 });
 
 ipcMain.handle('import-file', async () => {
-    if (!win) return { success: false, error: "No window" };
+    const parent = win || BrowserWindow.getFocusedWindow();
+    
+    if (!parent) return { success: false, error: "No window found" };
     
     try {
-        const { filePaths } = await dialog.showOpenDialog(win, {
+        const { canceled, filePaths } = await dialog.showOpenDialog(parent, {
             filters: [{ name: 'Runbooks', extensions: ['json', 'md'] }],
             properties: ['openFile']
         });
@@ -977,10 +1007,12 @@ ipcMain.handle('import-file', async () => {
     }
 });
 ipcMain.handle('qrun:pick-image', async (_, targetDir: string) => {
-    if (!win) return { success: false, error: "No window" };
+    const parent = win || BrowserWindow.getFocusedWindow();
+    
+    if (!parent) return { success: false, error: "No window" };
     
     try {
-        const { filePaths } = await dialog.showOpenDialog(win, {
+        const { canceled, filePaths } = await dialog.showOpenDialog(parent, {
             title: 'Pick an image',
             filters: [
                 { name: 'Images', extensions: ['jpg', 'png', 'gif', 'webp', 'jpeg'] }

@@ -16,6 +16,15 @@ export default defineConfig({
       },
       preload: {
         input: path.join(__dirname, 'electron/preload.ts'),
+        vite: {
+          build: {
+            rollupOptions: {
+              output: {
+                entryFileNames: '[name].cjs', // Use .cjs to bypass project-level "type": "module" issues
+              },
+            },
+          },
+        },
       },
       renderer: {},
     }),

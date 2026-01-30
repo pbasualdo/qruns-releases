@@ -7,12 +7,14 @@ interface HelpModalProps {
 }
 
 export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
-    const [activeTab, setActiveTab] = useState<'intro' | 'markdown' | 'sources' | 'security' | 'about'>('intro');
+    const [activeTab, setActiveTab] = useState<'intro' | 'markdown' | 'sources' | 'security' | 'updates' | 'about'>('intro');
     const [appVersion, setAppVersion] = useState<string>('');
+    const [changelog, setChangelog] = useState<string>('');
 
     React.useEffect(() => {
         if (window.electronAPI) {
             window.electronAPI.getAppVersion().then(v => setAppVersion(v));
+            window.electronAPI.getChangelog().then((c: string) => setChangelog(c));
         }
     }, []);
 
@@ -31,6 +33,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                         <button className={`help-nav-btn ${activeTab === 'markdown' ? 'active' : ''}`} onClick={() => setActiveTab('markdown')}>Markdown Format</button>
                         <button className={`help-nav-btn ${activeTab === 'sources' ? 'active' : ''}`} onClick={() => setActiveTab('sources')}>Managing Sources</button>
                         <button className={`help-nav-btn ${activeTab === 'security' ? 'active' : ''}`} onClick={() => setActiveTab('security')}>Security & Privacy</button>
+                        <button className={`help-nav-btn ${activeTab === 'updates' ? 'active' : ''}`} onClick={() => setActiveTab('updates')}>Update Log</button>
                         <button className={`help-nav-btn ${activeTab === 'about' ? 'active' : ''}`} onClick={() => setActiveTab('about')}>About</button>
                     </div>
                     <div className="help-content-area">
@@ -146,6 +149,28 @@ curl -I http://localhost:8080/health
                                 <div className="security-item">
                                     <h4>📂 Source Integrity</h4>
                                     <p>Runbooks are stored and displayed as Markdown data. The application <strong>does not execute any scripts</strong>. It provides a structured viewer for your procedures and snippets, ensuring a safe and transparent environment.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'updates' && (
+                            <div className="help-section">
+                                <h3>Update Log</h3>
+                                <p>Stay up to date with the latest features and fixes.</p>
+                                <div className="changelog-container">
+                                    {changelog.split('\n').map((line, i) => {
+                                        if (line.startsWith('## [')) {
+                                            return <h4 key={i} className="changelog-version">{line.replace('## ', '')}</h4>;
+                                        }
+                                        if (line.startsWith('### ')) {
+                                            return <h5 key={i} className="changelog-type">{line.replace('### ', '')}</h5>;
+                                        }
+                                        if (line.startsWith('- ')) {
+                                            return <div key={i} className="changelog-item">{line}</div>;
+                                        }
+                                        if (line.trim() === '') return <br key={i} />;
+                                        return <p key={i} className="changelog-text">{line}</p>;
+                                    })}
                                 </div>
                             </div>
                         )}
