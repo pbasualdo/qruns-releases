@@ -1,6 +1,6 @@
 # Install-Certificate.ps1
 # Installs the self-signed certificate to the Trusted Root Certification Authorities store.
-# This enables the Auto-Update functionality for Quick Runbooks.
+# This enables the Auto-Update functionality for IT Quick Runbooks.
 
 $ErrorActionPreference = "Stop"
 

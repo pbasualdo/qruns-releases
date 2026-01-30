@@ -1,12 +1,12 @@
 # Support & Contact Information
 
-For support regarding **Quick Runbooks**, please contact us using the information below.
+For support regarding **IT Quick Runbooks**, please contact us using the information below.
 
 ## Contact Details
 
 **Developer:** Pablo Basualdo
 
-**Email:** p-e-b@outlook.com
+**Email:** <p-e-b@outlook.com>
 
 **Phone:** +1 424-218-6524
 

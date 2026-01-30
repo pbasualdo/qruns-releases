@@ -285,7 +285,7 @@ export const QRunList: React.FC = () => {
       <header className="app-header">
         <div className="brand-area">
           <span className="logo-icon">⚡</span>
-          <h1>Quick Runbooks</h1>
+          <h1>IT Quick Runbooks</h1>
           <span className="count">v1.3</span>
         </div>
         <div className="header-actions">
@@ -340,7 +340,7 @@ export const QRunList: React.FC = () => {
           <div className="modal-overlay">
               <div className="modal-content" style={{maxWidth: '400px'}}>
                   <div className="modal-header">
-                      <h2>Welcome to Quick Runbooks!</h2>
+                      <h2>Welcome to IT Quick Runbooks!</h2>
                   </div>
                   <div className="modal-body">
                       <p>Do you want to install a <strong>starter kit</strong> of example runbooks (SQL, Network, HR, etc.) to help you get started?</p>
@@ -469,7 +469,7 @@ export const QRunList: React.FC = () => {
             <div className="sidebar-footer">
                 <div className="copyright">
                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
-                        <span>© 2026 Quick Runbooks</span>
+                        <span>© 2026 IT Quick Runbooks</span>
                         <span className="text-tertiary" style={{fontSize: '0.8em'}}>v{appVersion}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

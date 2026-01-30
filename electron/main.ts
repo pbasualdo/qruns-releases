@@ -46,7 +46,7 @@ function createSplashWindow() {
   } else {
     const splashPath = path.join(RENDERER_DIST, 'splash.html');
     splash.loadFile(splashPath).catch(() => {
-       splash?.loadURL('data:text/html;charset=utf-8,<html><body style="background:#0F172A;color:white;display:flex;justify-content:center;align-items:center;"><h1>Quick Runbooks</h1></body></html>');
+       splash?.loadURL('data:text/html;charset=utf-8,<html><body style="background:#0F172A;color:white;display:flex;justify-content:center;align-items:center;"><h1>IT Quick Runbooks</h1></body></html>');
     });
   }
   

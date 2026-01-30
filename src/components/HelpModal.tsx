@@ -39,8 +39,8 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                     <div className="help-content-area">
                         {activeTab === 'intro' && (
                             <div className="help-section">
-                                <h3>Welcome to Quick Runbooks</h3>
-                                <p>Quick Runbooks allows you to aggregate, view, and execute operational runbooks from multiple local folders or Git repositories.</p>
+                                <h3>Welcome to IT Quick Runbooks</h3>
+                                <p>IT Quick Runbooks allows you to aggregate, view, and execute operational runbooks from multiple local folders or Git repositories.</p>
                                 <p>All runbooks are written in <strong>Markdown</strong>, making them easy to read, write, and version control.</p>
                             </div>
                         )}
@@ -177,9 +177,9 @@ curl -I http://localhost:8080/health
 
                         {activeTab === 'about' && (
                             <div className="help-section">
-                                <h3>About Quick Runbooks</h3>
+                                <h3>About IT Quick Runbooks</h3>
                                 <div className="about-card">
-                                    <p className="about-title">Quick Runbooks</p>
+                                    <p className="about-title">IT Quick Runbooks</p>
                                     <p className="about-version">v{appVersion || '...'}</p>
                                     <p>A modern, efficient runbook executor for operations teams.</p>
                                     <hr className="about-divider" />

@@ -189,7 +189,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Auto-Update System**: Integrated `electron-updater` for in-app updates.
 - **Copyright Footer**: Added copyright and update status indicator to the sidebar.
-- **Quick Runbooks (`qrun`) Filtering**:
+- **IT Quick Runbooks (`qrun`) Filtering**:
   - Repository cloning now strictly requires a `qrun` subdirectory.
   - Runbook importer now strictly filters for `"category": "qrun"`.
 - **Certificate Generation**: Added `scripts/generate-cert.ps1` to easily create self-signed code signing certificates.

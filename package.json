@@ -17,7 +17,7 @@
   },
   "build": {
     "appId": "com.qruns.app",
-    "productName": "Quick Runbooks",
+    "productName": "IT Quick Runbooks",
     "copyright": "Copyright © 2026",
     "compression": "maximum",
     "directories": {
@@ -51,7 +51,7 @@
       "identityName": "pbasualdo.SOHOpsHelp",
       "publisher": "CN=DB33B8D5-A208-44E0-B5B9-6774D998D3CB",
       "publisherDisplayName": "pbasualdo",
-      "displayName": "SOH Ops Help"
+      "displayName": "IT Quick Runbooks"
     },
     "publish": [
       {
