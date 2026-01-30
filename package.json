@@ -41,10 +41,10 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "${name}-Setup-${version}.${ext}"
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "portable": {
-      "artifactName": "${name}-Portable-${version}.${ext}"
+      "artifactName": "${productName}-Portable-${version}.${ext}"
     },
     "appx": {
       "applicationId": "SOHOpsHelp",
