@@ -1,25 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { mockQRuns } from '../data/mockQRuns';
-import type { QRun, QRunStep } from '../types';
+import type { QRun, QRunStep, CategoryConfig } from '../types';
 import { RunbookEditor } from './RunbookEditor';
-import { useTheme, ACCENTS, type AccentColor } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
+import { ACCENTS, type AccentColor } from '../context/ThemeConstants';
 import './QRunList.css';
-import { SourcesModal } from './SourcesModal';
+import { SettingsModal } from './SettingsModal';
 import { HelpModal } from './HelpModal';
 
 export const QRunList: React.FC = () => {
-  const { theme, toggleTheme, accent, setAccent } = useTheme();
-  
-  // -- Data State --
-  const [runbooks, setRunbooks] = useState<QRun[]>([]);
-  
-  // -- View State --
-  const [activeFilter, setActiveFilter] = useState<'ALL' | 'IAAS' | 'PAAS'>('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
-  const [isSourcesModalOpen, setIsSourcesModalOpen] = useState(false);
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
+    const { theme, toggleTheme, accent, setAccent, viewMode, setViewMode, uiScale } = useTheme();
+    
+    // -- Data State --
+    const [runbooks, setRunbooks] = useState<QRun[]>([]);
+    
+    // -- View State --
+    const [activeFilter, setActiveFilter] = useState<'ALL' | 'IAAS' | 'PAAS'>('ALL');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedTag, setSelectedTag] = useState<string | null>(null);
+    const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+    const [isHelpOpen, setIsHelpOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [categories, setCategories] = useState<CategoryConfig[]>([]);
   const [availableSources, setAvailableSources] = useState<string[]>([]);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   
@@ -29,7 +30,7 @@ export const QRunList: React.FC = () => {
 
   // -- Update State --
   const [updateStatus, setUpdateStatus] = useState<string | null>(null); // 'available', 'downloading', 'ready', 'error'
-  const [updateInfo, setUpdateInfo] = useState<any>(null);
+  const [updateInfo, setUpdateInfo] = useState<{ version: string } | null>(null);
 
     const [appVersion, setAppVersion] = useState<string>('');
 
@@ -48,28 +49,31 @@ export const QRunList: React.FC = () => {
     }, []);
 
   // -- Load Data --
-  const loadRunbooks = async () => {
-    if (window.electronAPI) {
-      try {
-        const [loadedRuns, sources] = await Promise.all([
-            window.electronAPI.getRunbooks(),
-            window.electronAPI.getSources()
-        ]);
-        setRunbooks(loadedRuns);
-        setAvailableSources(sources);
+    const loadRunbooks = async () => {
         if (window.electronAPI) {
-           window.electronAPI.appReady();
-           setTimeout(() => {
-                window.electronAPI.checkForUpdates();
-           }, 5000);
+            try {
+                const [loadedRuns, sources, config] = await Promise.all([
+                    window.electronAPI.getRunbooks(),
+                    window.electronAPI.getSources(),
+                    window.electronAPI.getAppConfig()
+                ]);
+                setRunbooks(loadedRuns);
+                setAvailableSources(sources);
+                if (config.categories) setCategories(config.categories);
+                
+                if (window.electronAPI) {
+                    window.electronAPI.appReady();
+                    setTimeout(() => {
+                        window.electronAPI.checkForUpdates();
+                    }, 5000);
+                }
+            } catch (e) {
+                console.error("Failed to load data from Electron", e);
+            }
+        } else {
+            setRunbooks([]);
         }
-      } catch (e) {
-        console.error("Failed to load runbooks/sources from Electron", e);
-      }
-    } else {
-      setRunbooks(mockQRuns);
-    }
-  };
+    };
 
   React.useEffect(() => {
     loadRunbooks();
@@ -159,49 +163,97 @@ export const QRunList: React.FC = () => {
     if (!selectedRunId) setSelectedRunId(run.id);
   };
 
+  const handleDelete = async (run: QRun) => {
+    if (!window.electronAPI) return;
+    
+    if (confirm(`Are you sure you want to delete "${run.title}"? This will permanently remove the file from your local storage.`)) {
+        const result = await window.electronAPI.deleteRunbook(run);
+        if (result.success) {
+            await loadRunbooks();
+            setIsEditing(false);
+            setIsCreating(false);
+            setSelectedRunId(null);
+        } else {
+            alert("Error deleting runbook: " + result.error);
+        }
+    }
+  };
+
   const handleCancel = () => {
     setIsEditing(false);
     setIsCreating(false);
   };
 
-  // -- Render Helpers --
-  const renderIcon = (category: string) => {
-      // Icon depends on CATEGORY (Database, Network, etc)
-      const cat = (category || '').toLowerCase();
-      switch(cat) {
-          case 'alert': 
-             return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2"><polygon points="12 2 2 22 22 22 12 2"></polygon><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
-          case 'database':
-             return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-secondary)" strokeWidth="2"><path d="M7 21h10a2 2 0 0 0 2-2V9.437a2 2 0 0 0-.611-1.432l-9.009-9.009A2 2 0 0 0 7.962 1H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2z"></path></svg>;
-          case 'network':
-             return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6" y2="6"></line><line x1="6" y1="18" x2="6" y2="18"></line></svg>;
-          case 'compute':
-             return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>;
-          default:
-             return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle></svg>;
-      }
+  const handleCycleViewMode = () => {
+      const modes: ('super-compact' | 'compact' | 'comfortable' | 'detailed')[] = ['super-compact', 'compact', 'comfortable', 'detailed'];
+      const currentIdx = modes.indexOf(viewMode);
+      const nextMode = modes[(currentIdx + 1) % modes.length];
+      setViewMode(nextMode);
   };
 
+  // -- Render Helpers --
+   const renderIcon = (category: string) => {
+       const catName = category || '';
+       const config = categories.find(c => c.name.toLowerCase() === catName.toLowerCase());
+       
+       if (config) {
+           return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={config.color || "currentColor"} strokeWidth="2" dangerouslySetInnerHTML={{ __html: config.svg }} />;
+       }
+
+       // Fallback
+       return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle></svg>;
+   };
+
   const renderStepContent = (content: QRunStep['content'][0], idx: number) => {
-    if (content.type === 'code') {
+    switch (content.type) {
+      case 'text':
+        return <p key={idx}>{content.text}</p>;
+      case 'code':
         return (
-            <div key={idx} className="code-block">
-                <div className="code-header">
-                    <span className="lang-badge">{content.language.toUpperCase()}</span>
-                    <button className="copy-btn" onClick={() => navigator.clipboard.writeText(content.code)}>Copy</button>
-                </div>
-                <pre><code>{content.code}</code></pre>
+          <div key={idx} className="code-block">
+            <div className="code-header">
+              <span className="lang-badge">{content.language.toUpperCase()}</span>
+              <button className="copy-btn" onClick={() => navigator.clipboard.writeText(content.code)}>Copy</button>
             </div>
+            <pre><code>{content.code}</code></pre>
+          </div>
         );
-    }
-    if (content.type === 'list') {
+      case 'list':
         return <ul key={idx} className="pl-4">{content.items.map((it, i) => <li key={i}>{it}</li>)}</ul>;
+      case 'image': {
+        const currentSource = selectedRun?.sourcePath || '';
+        const normalizedSource = currentSource.replace(/\\/g, '/');
+        const fullPath = content.path.startsWith('http') ? content.path : `qrun-asset:///${normalizedSource}/${content.path}`;
+        return (
+          <div key={idx} className="step-image-block mb-1">
+            <img 
+              src={fullPath} 
+              alt={content.alt} 
+              onClick={() => {
+                  if (fullPath.startsWith('file://')) {
+                      // Optionally handle local file opening differently if needed, 
+                      // but window.open works for file:// in most electron setups if permitted.
+                  }
+                  window.open(fullPath);
+              }}
+            />
+          </div>
+        );
+      }
+      case 'expected':
+        return (
+          <div key={idx} className="step-expected-block">
+              <span className="expected-label">Expected:</span>
+              {content.text}
+          </div>
+        );
+      default:
+        return null;
     }
-    return <p key={idx}>{content.text}</p>;
   };
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ui-scale-${uiScale}`}>
       {/* 1. Global Header */}
       <header className="app-header">
         <div className="brand-area">
@@ -237,14 +289,8 @@ export const QRunList: React.FC = () => {
                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
               )}
            </button>
-            <button className="icon-btn" title="Manage Sources" onClick={() => {
-                if (window.electronAPI) {
-                    setIsSourcesModalOpen(true);
-                } else {
-                    alert('Sources management is only available in the Electron app.');
-                }
-            }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            <button className="icon-btn" title="Settings" onClick={() => setIsSettingsOpen(true)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             </button>
            <button className="icon-btn" title="Help / Guide" onClick={() => setIsHelpOpen(true)}>
                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
@@ -252,15 +298,10 @@ export const QRunList: React.FC = () => {
         </div>
       </header>
       
-      <SourcesModal 
-        isOpen={isSourcesModalOpen} 
-        onClose={() => setIsSourcesModalOpen(false)} 
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
         onUpdate={loadRunbooks}
-      />
-
-      <HelpModal 
-        isOpen={isHelpOpen} 
-        onClose={() => setIsHelpOpen(false)} 
       />
 
       <HelpModal 
@@ -275,8 +316,8 @@ export const QRunList: React.FC = () => {
                       <h2>Welcome to Quick Runbooks!</h2>
                   </div>
                   <div className="modal-body">
-                      <p>Do you want to install a set of <strong>example templates</strong> (SQL, Network, HR, etc.) to help you get started?</p>
-                      <p className="text-tertiary text-small">You can always install them later from 'Manage Sources'.</p>
+                      <p>Do you want to install a <strong>starter kit</strong> of example runbooks (SQL, Network, HR, etc.) to help you get started?</p>
+                      <p className="text-tertiary text-small">You can always install them later from 'Settings &gt; Sources'.</p>
                   </div>
                   <div className="modal-footer">
                       <button className="btn btn-secondary" onClick={() => {
@@ -318,7 +359,7 @@ export const QRunList: React.FC = () => {
                   <button className={`filter-btn ${activeFilter === 'IAAS' ? 'active' : ''}`} onClick={() => setActiveFilter('IAAS')}>IAAS</button>
                   <button className={`filter-btn ${activeFilter === 'PAAS' ? 'active' : ''}`} onClick={() => setActiveFilter('PAAS')}>PAAS</button>
                   <button className="filter-btn create-btn" onClick={handleCreate} title="Create New">+</button>
-                  <button 
+                   <button 
                     className="filter-btn" 
                     title="Import Runbook"
                     onClick={async () => {
@@ -340,6 +381,13 @@ export const QRunList: React.FC = () => {
                   >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                   </button>
+                  <button 
+                    className="filter-btn" 
+                    title={`Style: ${viewMode}`}
+                    onClick={handleCycleViewMode}
+                  >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                  </button>
                </div>
                {/* Tag Cloud */}
                {uniqueTags.length > 0 && (
@@ -357,18 +405,34 @@ export const QRunList: React.FC = () => {
                )}
             </div>
 
-            <div className="run-list-container">
+            <div className={`run-list-container view-mode-${viewMode}`}>
                {filteredRuns.map(run => (
                   <button 
                     key={run.id}
                     className={`run-list-item ${selectedRunId === run.id ? 'selected' : ''}`}
                     onClick={() => { setSelectedRunId(run.id); setIsEditing(false); setIsCreating(false); }}
                   >
-                     <div className="item-title">{run.title}</div>
-                     <div className="item-meta">
-                        {renderIcon(run.category)}
-                        <span className="item-badge">{run.category}</span>
-                        <span className="item-desc">{run.shortDescription}</span>
+                     <div className="item-content-wrapper">
+                         <div className="item-title-row">
+                             {viewMode !== 'super-compact' && renderIcon(run.category)}
+                             <div className="item-title">{run.title}</div>
+                         </div>
+                         
+                         {(viewMode === 'comfortable' || viewMode === 'detailed') && (
+                             <div className="item-meta">
+                                <span className="item-badge">{run.category}</span>
+                                <span className="item-desc">{run.shortDescription}</span>
+                             </div>
+                         )}
+
+                         {viewMode === 'detailed' && (
+                             <>
+                                 <div className="item-tags">
+                                     {run.tags.map(t => <span key={t} className="tag-micro">{t}</span>)}
+                                 </div>
+                                 <div className="item-full-desc">{run.fullDescription}</div>
+                             </>
+                         )}
                      </div>
                   </button>
                ))}
@@ -460,36 +524,50 @@ export const QRunList: React.FC = () => {
             {isCreating ? (
                 <RunbookEditor onSave={handleSave} onCancel={handleCancel} sources={availableSources} />
             ) : isEditing && selectedRun ? (
-                <RunbookEditor initialData={selectedRun} onSave={handleSave} onCancel={handleCancel} />
-            ) : selectedRun ? (
+                <RunbookEditor initialData={selectedRun} onSave={handleSave} onCancel={handleCancel} onDelete={handleDelete} sources={availableSources} />
+             ) : selectedRun ? (
                 <>
-                   <div className="view-header">
+                   <div className="view-header compact">
                       <div className="view-header-top">
                          <div className="title-group">
-                            <h2>{selectedRun.title}</h2>
-                            <div className="flex-row gap-05 mt-05">
-                               <span className="item-badge text-small">{selectedRun.service}</span>
-                               <span className="item-badge text-small" style={{background: 'var(--bg-tertiary)', color: 'var(--text-secondary)'}}>{selectedRun.category}</span>
-                               <span className="text-tertiary">| {selectedRun.fullDescription}</span>
-                               <span className="status-badge" style={{marginLeft: 'auto', background: 'var(--bg-tertiary)', color: 'var(--text-tertiary)'}}>
-                                 {selectedRun.format === 'md' ? 'MARKDOWN' : 'JSON'}
-                               </span>
-                            </div>
+                             <div className="title-row">
+                                 <h2>{selectedRun.title}</h2>
+                                 <div className="header-badges">
+                                     <span className="item-badge text-small">{selectedRun.service}</span>
+                                     <span className="item-badge text-small secondary" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                         {renderIcon(selectedRun.category)}
+                                         {selectedRun.category}
+                                     </span>
+                                     {selectedRun.readonly && (
+                                         <span className="status-badge protected" title="Protected runbook">
+                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                             Protected
+                                         </span>
+                                     )}
+                                 </div>
+                             </div>
+                             <p className="header-desc">{selectedRun.fullDescription}</p>
+                             <div className="header-tags">
+                                {selectedRun.tags.map(t => <span key={t} className="tag-pill">{t}</span>)}
+                             </div>
                          </div>
                          <div className="view-actions">
-                            <button className="btn btn-secondary" onClick={() => handleEdit()}>
+                            {selectedRun && !selectedRun.readonly && (
+                                <button className="btn btn-secondary" onClick={() => handleDelete(selectedRun)} title="Delete">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2v2"></path></svg>
+                                    Delete
+                                </button>
+                            )}
+                            <button className="btn btn-secondary" onClick={() => handleEdit()} title="Edit Runbook">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 Edit
                             </button>
-                            <button className="btn btn-secondary" onClick={handleRefresh}>
+                            <button className="btn btn-secondary" onClick={handleRefresh} title="Reload Library">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l5 1.55a9 9 0 0 0 13.9 4.95"></path></svg>
                                 Refresh
                             </button>
                          </div>
                       </div>
-                       <div className="flex-row gap-05">
-                          {selectedRun.tags.map(t => <span key={t} className="item-badge">{t}</span>)}
-                       </div>
                    </div>
 
                    <div className="view-content" ref={contentRef}>
@@ -501,6 +579,12 @@ export const QRunList: React.FC = () => {
                             </div>
                             <div className="step-details">
                                 <h3 className="step-title">Step {idx + 1}: {step.title}</h3>
+                                {(step.ownership || step.timeEstimation) && (
+                                    <div className="step-meta-badges">
+                                        {step.ownership && <span className="meta-badge-item">👤 {step.ownership}</span>}
+                                        {step.timeEstimation && <span className="meta-badge-item">⏱️ {step.timeEstimation}</span>}
+                                    </div>
+                                )}
                                 <div className="step-body">
                                    {step.content.map((c, i) => renderStepContent(c, i))}
                                 </div>

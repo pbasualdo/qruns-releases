@@ -9,9 +9,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "dist": "npm run build && npm run generate-assets && electron-builder",
+    "dist:store": "npm run build && npm run generate-assets && electron-builder --win appx --publish never",
     "lint": "eslint .",
     "preview": "vite preview",
-    "generate-assets": "node scripts/generate-assets.cjs"
+    "generate-assets": "node scripts/generate-assets.cjs",
+    "test": "vitest run"
   },
   "build": {
     "appId": "com.qruns.app",
@@ -33,8 +35,7 @@
     "win": {
       "target": [
         "nsis",
-        "portable",
-        "appx"
+        "portable"
       ]
     },
     "nsis": {
@@ -80,6 +81,7 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "@vitest/ui": "^4.0.18",
     "electron": "^39.2.7",
     "electron-builder": "^26.4.0",
     "eslint": "^9.39.1",
@@ -92,6 +94,7 @@
     "typescript-eslint": "^8.46.4",
     "vite": "^6.0.0",
     "vite-plugin-electron": "^0.28.0",
-    "vite-plugin-electron-renderer": "^0.14.5"
+    "vite-plugin-electron-renderer": "^0.14.5",
+    "vitest": "^4.0.18"
   }
 }

@@ -11,6 +11,10 @@ type: qrun
 
 ## 1. Connect to Database Server
 
+Ownership: DBA Team
+Expected: Terminal access granted
+Time: 2m
+
 Establish a remote desktop or SQL Management Studio connection.
 
 ```bash
@@ -19,6 +23,10 @@ sqlcmd -S db-prod-01 -U sa -P <PASSWORD>
 ```
 
 ## 2. Check Database State
+
+Ownership: DBA Team
+Expected: Status 'ONLINE'
+Time: 1m
 
 Ensure the database is online and accessible.
 

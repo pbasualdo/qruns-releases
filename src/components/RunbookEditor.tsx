@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import type { QRun } from '../types';
+import React, { useState, useEffect } from 'react';
+import type { QRun, CategoryConfig } from '../types';
 import './RunbookEditor.css';
 import './QRunList.css';
 
@@ -7,24 +7,46 @@ interface RunbookEditorProps {
   initialData?: Partial<QRun>;
   onSave: (run: QRun) => void;
   onCancel: () => void;
+  onDelete?: (run: QRun) => void;
   sources?: string[];
 }
 
-export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSave, onCancel, sources = [] }) => {
-  const [formData, setFormData] = useState<Partial<QRun>>(initialData || {
-    title: '',
-    shortDescription: '',
-    fullDescription: '',
-    service: 'IAAS',
-    category: 'Alert',
-    type: 'qrun',
-    tags: [],
-    steps: []
+export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSave, onCancel, onDelete, sources = [] }) => {
+  const [formData, setFormData] = useState<Partial<QRun>>(() => {
+    const defaults = {
+      title: '',
+      shortDescription: '',
+      fullDescription: '',
+      service: 'IAAS' as const,
+      category: 'Alert' as const,
+      type: 'qrun' as const,
+      tags: [],
+      steps: []
+    };
+    return initialData ? { ...defaults, ...initialData } : defaults;
   });
 
   // Safe navigation for tags
   const [tagInput, setTagInput] = useState<string>((formData.tags || []).join(', '));
   const [targetSource, setTargetSource] = useState<string>(sources[0] || '');
+  const [owners, setOwners] = useState<string[]>([]);
+  const [categories, setCategories] = useState<CategoryConfig[]>([]);
+
+  useEffect(() => {
+    if (window.electronAPI) {
+      window.electronAPI.getAppConfig().then(config => {
+        if (config.owners) setOwners(config.owners);
+        if (config.categories) setCategories(config.categories);
+      });
+    }
+  }, []);
+
+  // Sync targetSource when sources load late
+  useEffect(() => {
+    if (sources.length > 0 && !targetSource) {
+      setTargetSource(sources[0]);
+    }
+  }, [sources, targetSource]);
 
   const handleTagsChange = (value: string) => {
     setTagInput(value);
@@ -39,16 +61,47 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
     }));
   };
 
-  const updateStepTitle = (index: number, title: string) => {
+  const updateStepMetadata = (index: number, field: 'title' | 'ownership' | 'timeEstimation', value: string) => {
     const newSteps = [...(formData.steps || [])];
-    newSteps[index] = { ...newSteps[index], title };
+    newSteps[index] = { ...newSteps[index], [field]: value };
     setFormData(prev => ({ ...prev, steps: newSteps }));
   };
 
-  const addContent = (stepIndex: number, type: 'text' | 'code') => {
+  const addContent = (stepIndex: number, type: 'text' | 'code' | 'image' | 'expected') => {
     const newSteps = [...(formData.steps || [])];
+    
+    if (type === 'image') {
+        const targetDir = initialData?.sourcePath || targetSource;
+        if (!targetDir) {
+            alert("Please select a save location first.");
+            return;
+        }
+        
+        window.electronAPI.pickImage(targetDir).then(result => {
+            if (result.success && result.path) {
+                setFormData(prev => {
+                    const newSteps = [...(prev.steps || [])];
+                    const newContent = { type: 'image' as const, path: result.path as string, alt: '' };
+                    newSteps[stepIndex] = {
+                        ...newSteps[stepIndex],
+                        content: [...(newSteps[stepIndex].content || []), newContent]
+                    };
+                    return { ...prev, steps: newSteps };
+                });
+            } else if (!result.success && result.error !== 'No image selected') {
+                alert("Failed to pick image: " + (result.error || "Unknown error"));
+            }
+        }).catch(err => {
+            console.error("IPC Error picking image:", err);
+            alert("An error occurred while opening the image picker.");
+        });
+        return;
+    }
+
     const newContent = type === 'text' 
       ? { type: 'text' as const, text: '' }
+      : type === 'expected'
+      ? { type: 'expected' as const, text: '' }
       : { type: 'code' as const, language: 'sql', code: '' };
     
     newSteps[stepIndex] = {
@@ -62,10 +115,10 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
     const newSteps = [...(formData.steps || [])];
     const item = newSteps[stepIndex].content[contentIndex];
     
-    if (item.type === 'text') {
-      newSteps[stepIndex].content[contentIndex] = { ...item, text: value };
+    if (item.type === 'text' || item.type === 'expected') {
+      newSteps[stepIndex].content[contentIndex] = { ...item, text: value } as any;
     } else if (item.type === 'code') {
-      newSteps[stepIndex].content[contentIndex] = { ...item, [field]: value };
+      newSteps[stepIndex].content[contentIndex] = { ...item, [field]: value } as any;
     }
     
     setFormData(prev => ({ ...prev, steps: newSteps }));
@@ -96,7 +149,7 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
       shortDescription: formData.shortDescription || '',
       fullDescription: formData.fullDescription || '',
       service: formData.service as 'IAAS' | 'PAAS' | 'SAAS',
-      category: formData.category as 'Database' | 'Network' | 'Compute' | 'Alert',
+      category: formData.category as string,
       type: 'qrun', // Force strict type
       tags: formData.tags || [],
       steps: formData.steps || [],
@@ -115,8 +168,12 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
                       <div className="source-selector">
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', marginRight: '0.5rem' }}>Save to:</label>
                           <select 
+                            title="Target Source"
                             value={targetSource} 
-                            onChange={(e) => setTargetSource(e.target.value)}
+                            onChange={(e) => {
+                                setTargetSource(e.target.value);
+                                setFormData(prev => ({ ...prev, sourcePath: e.target.value }));
+                            }}
                             style={{ 
                                 background: 'var(--bg-tertiary)', 
                                 border: '1px solid var(--border-color)', 
@@ -132,6 +189,15 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
                   )}
               </div>
               <div className="editor-actions">
+                  {initialData && !initialData.readonly && onDelete && (
+                      <button 
+                        className="btn btn-secondary" 
+                        style={{ color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                        onClick={() => onDelete(initialData as QRun)}
+                      >
+                         Delete
+                      </button>
+                  )}
                   <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
                   <button className="btn btn-primary" onClick={handleSave}>Save Changes</button>
               </div>
@@ -154,6 +220,7 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
                   <div className="meta-pill">
                       <span className="meta-label">Service:</span>
                       <select 
+                        title="Service Type"
                         className="meta-input-transparent"
                         value={formData.service}
                         onChange={(e) => setFormData({...formData, service: e.target.value as 'IAAS' | 'PAAS' | 'SAAS'})}
@@ -167,14 +234,17 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
                   <div className="meta-pill">
                       <span className="meta-label">Category:</span>
                       <select 
+                        title="Category"
                         className="meta-input-transparent"
                         value={formData.category}
-                        onChange={(e) => setFormData({...formData, category: e.target.value as 'Database' | 'Network' | 'Compute' | 'Alert'})}
+                        onChange={(e) => setFormData({...formData, category: e.target.value})}
                       >
-                          <option value="Alert">Alert</option>
-                          <option value="Database">Database</option>
-                          <option value="Network">Network</option>
-                          <option value="Compute">Compute</option>
+                          {categories.map(cat => (
+                              <option key={cat.name} value={cat.name}>{cat.name}</option>
+                          ))}
+                          {formData.category && !categories.find(c => c.name === formData.category) && (
+                              <option value={formData.category}>{formData.category} (Custom)</option>
+                          )}
                       </select>
                   </div>
 
@@ -210,24 +280,70 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
                               <button className="delete-step-btn" onClick={() => removeStep(sIdx)} title="Delete Step">×</button>
                           </div>
 
-                          <input
-                                type="text"
-                                className="step-title-simple"
-                                value={step.title}
-                                onChange={(e) => updateStepTitle(sIdx, e.target.value)}
-                                placeholder={`Step ${sIdx+1} Title`}
-                           />
+                           <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                               <div style={{ flex: 1, minWidth: '300px' }}>
+                                   <input
+                                        type="text"
+                                        className="step-title-simple"
+                                        value={step.title}
+                                        onChange={(e) => updateStepMetadata(sIdx, 'title', e.target.value)}
+                                        placeholder={`Step ${sIdx+1} Title`}
+                                   />
+                                   <div className="step-meta-inputs" style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                                        {step.ownership !== undefined && (
+                                            <div className="meta-field-group">
+                                                <span className="meta-label-tiny">Owner</span>
+                                                <select 
+                                                    className="meta-input-mini" 
+                                                    title="Select Step Owner"
+                                                    value={step.ownership || ''} 
+                                                    onChange={(e) => updateStepMetadata(sIdx, 'ownership', e.target.value)}
+                                                >
+                                                    <option value="">Select Owner...</option>
+                                                    {owners.map(o => (
+                                                        <option key={o} value={o}>{o}</option>
+                                                    ))}
+                                                    {!owners.includes(step.ownership || '') && step.ownership && (
+                                                        <option value={step.ownership}>{step.ownership} (External)</option>
+                                                    )}
+                                                </select>
+                                            </div>
+                                        )}
+                                        {step.timeEstimation !== undefined && (
+                                            <div className="meta-field-group">
+                                                <span className="meta-label-tiny">Time</span>
+                                                <input 
+                                                    type="text" 
+                                                    className="meta-input-mini" 
+                                                    style={{ width: '60px' }}
+                                                    placeholder="5m" 
+                                                    value={step.timeEstimation || ''} 
+                                                    onChange={(e) => updateStepMetadata(sIdx, 'timeEstimation', e.target.value)}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                               </div>
+                           </div>
 
                           <div className="doc-step-content">
                              {(step.content || []).map((content, cIdx) => (
                                  <div key={cIdx} className="content-block-wrapper">
                                     {content.type === 'text' ? (
-                                        <textarea
-                                            className="step-body-simple"
-                                            value={content.text}
-                                            onChange={(e) => updateStepContent(sIdx, cIdx, e.target.value)}
-                                            placeholder="Type styled instructions..."
-                                        />
+                                            <textarea
+                                                className="step-body-simple"
+                                                value={content.text}
+                                                onChange={(e) => updateStepContent(sIdx, cIdx, e.target.value)}
+                                                placeholder="Type styled instructions..."
+                                            />
+                                    ) : content.type === 'expected' ? (
+                                            <textarea
+                                                className="step-body-simple"
+                                                value={content.text}
+                                                onChange={(e) => updateStepContent(sIdx, cIdx, e.target.value)}
+                                                placeholder="Expected Result: (e.g. Service is RUNNING)"
+                                                style={{ color: 'var(--accent-primary)', borderLeft: '3px solid var(--accent-primary)', paddingLeft: '1rem', fontStyle: 'italic' }}
+                                            />
                                     ) : content.type === 'code' ? (
                                         <div className="step-block-code">
                                             <textarea 
@@ -235,6 +351,29 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
                                                 value={content.code}
                                                 onChange={(e) => updateStepContent(sIdx, cIdx, e.target.value, 'code')}
                                                 placeholder="SELECT * FROM..."
+                                            />
+                                        </div>
+                                    ) : content.type === 'image' ? (
+                                        <div className="step-block-image" style={{ marginBottom: '1rem' }}>
+                                            <img 
+                                                src={`qrun-asset:///${(formData.sourcePath || targetSource).replace(/\\/g, '/')}/${content.path}`} 
+                                                alt={content.alt} 
+                                                style={{ maxWidth: '100%', borderRadius: '4px', border: '1px solid var(--border-color)' }}
+                                            />
+                                            <input 
+                                                type="text"
+                                                className="meta-input-mini"
+                                                placeholder="Alt text..."
+                                                value={content.alt || ''}
+                                                style={{ marginTop: '0.5rem', width: '100%' }}
+                                                onChange={(e) => {
+                                                    const newSteps = [...(formData.steps || [])];
+                                                    const item = newSteps[sIdx].content[cIdx];
+                                                    if (item.type === 'image') {
+                                                        newSteps[sIdx].content[cIdx] = { ...item, alt: e.target.value };
+                                                        setFormData(prev => ({ ...prev, steps: newSteps }));
+                                                    }
+                                                }}
                                             />
                                         </div>
                                     ) : null}
@@ -246,6 +385,12 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
                              <div className="step-actions">
                                  <button className="small-btn" onClick={() => addContent(sIdx, 'text')}>+ Text</button>
                                  <button className="small-btn" onClick={() => addContent(sIdx, 'code')}>+ Code</button>
+                                 <button className="small-btn" onClick={() => addContent(sIdx, 'image')}>+ Image</button>
+                                 <button className="small-btn" onClick={() => addContent(sIdx, 'expected')}>+ Expected</button>
+                                 <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
+                                     {step.ownership === undefined && <button className="small-btn" onClick={() => updateStepMetadata(sIdx, 'ownership', '')}>+ Owner</button>}
+                                     {step.timeEstimation === undefined && <button className="small-btn" onClick={() => updateStepMetadata(sIdx, 'timeEstimation', '')}>+ Time</button>}
+                                 </div>
                              </div>
                           </div>
                       </div>

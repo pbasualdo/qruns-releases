@@ -16,7 +16,8 @@ declare global {
       onUpdateDownloaded: (callback: (info: { version: string }) => void) => void;
       onUpdateNotAvailable: (callback: (info: { version: string }) => void) => void;
       onUpdateError: (callback: (err: string) => void) => void;
-      downloadTemplate: (format: 'json' | 'md') => Promise<{ success: boolean; error?: string }>;
+      downloadTemplate: () => Promise<{ success: boolean; error?: string }>;
+      pickImage: (targetDir: string) => Promise<{ success: boolean; path?: string; error?: string }>;
       importRunbook: () => Promise<{ success: boolean; error?: string }>;
       startAutoDownload: () => Promise<void>;
       startManualDownload: (url: string) => Promise<void>;
@@ -24,8 +25,8 @@ declare global {
       refreshSources: () => Promise<{ success: boolean; results?: { source: string; success: boolean; error?: string; output?: string }[]; error?: string }>;
       appReady: () => void;
       installExamples: () => Promise<{ success: boolean; count?: number; error?: string }>;
-      getAppConfig: () => Promise<any>;
-      setAppConfig: (config: any) => Promise<any>;
+      getAppConfig: () => Promise<{ firstRunComplete: boolean; sources: string[]; owners: string[]; categories: import('./types.js').CategoryConfig[] }>;
+      setAppConfig: (config: Partial<{ firstRunComplete: boolean; sources: string[]; owners: string[]; categories: import('./types.js').CategoryConfig[] }>) => Promise<{ success: boolean }>;
     }
   }
 }

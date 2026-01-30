@@ -1,21 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-
-type Theme = 'dark' | 'light';
-export type AccentColor = 'indigo' | 'emerald' | 'rose' | 'amber' | 'cyan';
-
-export const ACCENTS: Record<AccentColor, { primary: string; secondary: string }> = {
-    indigo: { primary: '#6366F1', secondary: '#818CF8' },
-    emerald: { primary: '#10B981', secondary: '#34D399' },
-    rose: { primary: '#F43F5E', secondary: '#FB7185' },
-    amber: { primary: '#F59E0B', secondary: '#FBBF24' },
-    cyan: { primary: '#06B6D4', secondary: '#22D3EE' }
-};
+import { ACCENTS, type AccentColor, type Theme, type ViewMode, type UIScale } from './ThemeConstants';
 
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
   accent: AccentColor;
   setAccent: (accent: AccentColor) => void;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
+  uiScale: UIScale;
+  setUIScale: (scale: UIScale) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -29,7 +23,18 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [accent, setAccent] = useState<AccentColor>(() => {
       const saved = localStorage.getItem('accent') as AccentColor;
-      return (saved && ACCENTS[saved]) ? saved : 'indigo';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (saved && (ACCENTS as Record<string, any>)[saved]) ? saved : 'indigo';
+  });
+
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+      const saved = localStorage.getItem('viewMode') as ViewMode;
+      return saved || 'comfortable';
+  });
+
+  const [uiScale, setUIScale] = useState<UIScale>(() => {
+      const saved = localStorage.getItem('uiScale') as UIScale;
+      return saved || 'normal';
   });
 
   useEffect(() => {
@@ -44,17 +49,32 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem('accent', accent);
   }, [accent]);
 
+  useEffect(() => {
+      localStorage.setItem('viewMode', viewMode);
+  }, [viewMode]);
+
+  useEffect(() => {
+      document.documentElement.setAttribute('data-ui-scale', uiScale);
+      localStorage.setItem('uiScale', uiScale);
+  }, [uiScale]);
+
   const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    setTheme((prev: Theme) => prev === 'dark' ? 'light' : 'dark');
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, accent, setAccent }}>
+    <ThemeContext.Provider value={{ 
+        theme, toggleTheme, 
+        accent, setAccent, 
+        viewMode, setViewMode, 
+        uiScale, setUIScale 
+    }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (context === undefined) {

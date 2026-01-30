@@ -16,7 +16,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateDownloaded: (callback: (info: { version: string }) => void) => ipcRenderer.on('update-downloaded', (_event, info) => callback(info)),
   onUpdateNotAvailable: (callback: (info: { version: string }) => void) => ipcRenderer.on('update-not-available', (_event, info) => callback(info)),
   onUpdateError: (callback: (err: string) => void) => ipcRenderer.on('update-error', (_event, err) => callback(err)),
-  downloadTemplate: (format: 'json' | 'md') => ipcRenderer.invoke('download-template', format),
+  downloadTemplate: () => ipcRenderer.invoke('download-template'),
+  pickImage: (targetDir: string) => ipcRenderer.invoke('qrun:pick-image', targetDir),
   importRunbook: () => ipcRenderer.invoke('import-file'),
   startAutoDownload: () => ipcRenderer.invoke('start-auto-download'),
   startManualDownload: (url: string) => ipcRenderer.invoke('start-manual-download', url),
@@ -27,5 +28,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Example & Config
   installExamples: () => ipcRenderer.invoke('install-examples'),
   getAppConfig: () => ipcRenderer.invoke('get-app-config'),
-  setAppConfig: (config: any) => ipcRenderer.invoke('set-app-config', config),
+  setAppConfig: (config: Partial<{ firstRunComplete: boolean; sources: string[]; owners: string[] }>) => ipcRenderer.invoke('set-app-config', config),
 })

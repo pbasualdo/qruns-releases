@@ -7,7 +7,7 @@ interface HelpModalProps {
 }
 
 export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
-    const [activeTab, setActiveTab] = useState<'intro' | 'markdown' | 'json' | 'sources' | 'about'>('intro');
+    const [activeTab, setActiveTab] = useState<'intro' | 'markdown' | 'sources' | 'security' | 'about'>('intro');
     const [appVersion, setAppVersion] = useState<string>('');
 
     React.useEffect(() => {
@@ -29,8 +29,8 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                     <div className="help-sidebar">
                         <button className={`help-nav-btn ${activeTab === 'intro' ? 'active' : ''}`} onClick={() => setActiveTab('intro')}>Introduction</button>
                         <button className={`help-nav-btn ${activeTab === 'markdown' ? 'active' : ''}`} onClick={() => setActiveTab('markdown')}>Markdown Format</button>
-                        <button className={`help-nav-btn ${activeTab === 'json' ? 'active' : ''}`} onClick={() => setActiveTab('json')}>JSON Format</button>
                         <button className={`help-nav-btn ${activeTab === 'sources' ? 'active' : ''}`} onClick={() => setActiveTab('sources')}>Managing Sources</button>
+                        <button className={`help-nav-btn ${activeTab === 'security' ? 'active' : ''}`} onClick={() => setActiveTab('security')}>Security & Privacy</button>
                         <button className={`help-nav-btn ${activeTab === 'about' ? 'active' : ''}`} onClick={() => setActiveTab('about')}>About</button>
                     </div>
                     <div className="help-content-area">
@@ -38,17 +38,17 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                             <div className="help-section">
                                 <h3>Welcome to Quick Runbooks</h3>
                                 <p>Quick Runbooks allows you to aggregate, view, and execute operational runbooks from multiple local folders or Git repositories.</p>
-                                <p>You can write your runbooks in either <strong>Markdown</strong> (recommended for ease of writing) or <strong>JSON</strong> (for structured data).</p>
+                                <p>All runbooks are written in <strong>Markdown</strong>, making them easy to read, write, and version control.</p>
                             </div>
                         )}
 
                         {activeTab === 'markdown' && (
                             <div className="help-section">
                                 <h3>Markdown Format (.md)</h3>
-                                <div style={{ marginBottom: '1rem' }}>
+                                <div className="help-intro-header">
                                     <button 
                                         className="btn btn-secondary btn-small"
-                                        onClick={() => window.electronAPI?.downloadTemplate('md')}
+                                        onClick={() => window.electronAPI?.downloadTemplate()}
                                     >
                                         Download Template (.md)
                                     </button>
@@ -102,48 +102,6 @@ curl -I http://localhost:8080/health
                             </div>
                         )}
 
-                        {activeTab === 'json' && (
-                            <div className="help-section">
-                                <h3>JSON Format (.json)</h3>
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <button 
-                                        className="btn btn-secondary btn-small"
-                                        onClick={() => window.electronAPI?.downloadTemplate('json')}
-                                    >
-                                        Download Template (.json)
-                                    </button>
-                                </div>
-                                <p>JSON provides a strict structure, useful if you are generating runbooks programmatically.</p>
-                                <div className="code-snippet">
-<pre>{`{
-  "id": "db-backup-manual",
-  "title": "Manual Database Backup",
-  "service": "IAAS",
-  "category": "Database",
-  "tags": ["sql", "backup"],
-  "shortDescription": "Trigger a manual backup",
-  "fullDescription": "Triggers a full backup of the primary SQL instance",
-  "type": "qrun",
-  "steps": [
-    {
-      "title": "Connect to Database",
-      "content": [
-        { "type": "text", "text": "Open SSMS and connect to the primary instance." },
-        { "type": "code", "language": "sql", "code": "SELECT @@VERSION" }
-      ]
-    },
-    {
-      "title": "Execute Backup",
-      "content": [
-         { "type": "code", "language": "sql", "code": "BACKUP DATABASE [MyDB] TO DISK = 'NUL'" }
-      ]
-    }
-  ]
-}`}</pre>
-                                </div>
-                            </div>
-                        )}
-
                         {activeTab === 'sources' && (
                             <div className="help-section">
                                 <h3>Managing Sources</h3>
@@ -162,19 +120,58 @@ curl -I http://localhost:8080/health
                             </div>
                         )}
 
+                        {activeTab === 'security' && (
+                            <div className="help-section">
+                                <h3>Security & Data Management</h3>
+                                
+                                <div className="security-item">
+                                    <h4>🔒 Data Locality</h4>
+                                    <p>Your runbooks, configuration, and credentials never leave your machine. All data is stored locally in your Application Data folder.</p>
+                                </div>
+
+                                <div className="security-item">
+                                    <h4>🌐 Network Isolation</h4>
+                                    <p>The application only makes outbound connections to:</p>
+                                    <ul>
+                                        <li><strong>Iconify API</strong>: To fetch category icons during configuration.</li>
+                                        <li><strong>Git Providers</strong>: Only for repositories you explicitly add as sources.</li>
+                                    </ul>
+                                </div>
+
+                                <div className="security-item">
+                                    <h4>🛡️ Privacy First</h4>
+                                    <p>There is <strong>no telemetry, no tracking, and no hidden data collection</strong>. What you do in the app is entirely private.</p>
+                                </div>
+
+                                <div className="security-item">
+                                    <h4>📂 Source Integrity</h4>
+                                    <p>Runbooks are stored and displayed as Markdown data. The application <strong>does not execute any scripts</strong>. It provides a structured viewer for your procedures and snippets, ensuring a safe and transparent environment.</p>
+                                </div>
+                            </div>
+                        )}
+
                         {activeTab === 'about' && (
                             <div className="help-section">
                                 <h3>About Quick Runbooks</h3>
-                                <div className="about-card" style={{ padding: '1rem', background: 'var(--bg-tertiary)', borderRadius: '8px', marginTop: '1rem' }}>
-                                    <p style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Quick Runbooks</p>
-                                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>v{appVersion || '...'}</p>
+                                <div className="about-card">
+                                    <p className="about-title">Quick Runbooks</p>
+                                    <p className="about-version">v{appVersion || '...'}</p>
                                     <p>A modern, efficient runbook executor for operations teams.</p>
-                                    <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
+                                    <hr className="about-divider" />
                                     <p><strong>Created by:</strong> Pablo E. Basualdo</p>
                                     <p><strong>License:</strong> Private</p>
-                                    <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-tertiary)' }}>
+                                    <p className="about-footer">
                                         Built with React, Vite, and Electron.
                                     </p>
+                                    <div className="about-actions mt-1">
+                                        <button 
+                                            className="btn btn-primary feedback-btn"
+                                            onClick={() => window.open('https://github.com/pbasualdo/qruns-releases/issues', '_blank')}
+                                        >
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                            Leave Feedback
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}

@@ -1,17 +1,21 @@
-import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs'
 import { exec } from 'node:child_process'
 // import log from 'electron-log';
-import type { QRun, QRunStep } from './types.js';
+import type { QRun, QRunStep, CategoryConfig } from './types.js';
 
 // log.transports.file.level = 'info';
 console.log('App starting...');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
 process.env.APP_ROOT = path.join(__dirname, '..')
+
+// Register custom protocol scheme
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'qrun-asset', privileges: { secure: true, standard: true, supportFetchAPI: true, bypassCSP: true, stream: true } }
+]);
 
 export const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist-electron')
@@ -61,7 +65,8 @@ function createMainWindow() {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: false 
+      sandbox: app.isPackaged 
+      // webSecurity: !VITE_DEV_SERVER_URL // No longer needed thanks to custom protocol
     },
   })
 
@@ -120,6 +125,39 @@ app.on('activate', () => {
 })
 
 app.whenReady().then(() => {
+    // Setup custom protocol handler
+    protocol.handle('qrun-asset', async (request) => {
+        try {
+            const urlString = request.url;
+            // On Windows, qrun-asset://C:/... -> url.pathname is /C:/...
+            // or even qrun-asset:C:/... depending on how it's called.
+            // A more robust way to extract the path:
+            let pathPart = urlString.replace(/^qrun-asset:\/+/i, '');
+            
+            // Re-normalize path
+            let filePath = decodeURIComponent(pathPart);
+            
+            // If it starts with a drive letter C:/... but has no leading slash, it's good.
+            // If it starts with /C:/..., remove the leading slash.
+            if (process.platform === 'win32' && filePath.startsWith('/')) {
+                filePath = filePath.slice(1);
+            }
+
+            // Ensure absolute and normalized
+            filePath = path.normalize(filePath);
+            
+            console.log(`[Protocol] Loading asset: ${filePath}`);
+            
+            if (fs.existsSync(filePath)) {
+                return net.fetch(`file:///${filePath.replace(/\\/g, '/')}`);
+            }
+            return new Response('Not Found', { status: 404 });
+        } catch (e) {
+            console.error('[Protocol] Error:', e);
+            return new Response('Internal Error', { status: 500 });
+        }
+    });
+
     createSplashWindow();
     createMainWindow();
 });
@@ -145,25 +183,43 @@ function getConfig() {
         saveConfig(config);
       }
       
-      // Ensure sources exists
-      if (!config.sources) {
-        config.sources = [DEFAULT_DOCS_DIR];
+      // Ensure owners exists
+      if (!config.owners) {
+        config.owners = ['Admin', 'Dev', 'Security', 'SRE'];
+        saveConfig(config);
+      }
+
+      // Ensure categories exists (Default Icons)
+      if (!config.categories) {
+        config.categories = [
+          { name: 'Database', svg: '<path d="M7 21h10a2 2 0 0 0 2-2V9.437a2 2 0 0 0-.611-1.432l-9.009-9.009A2 2 0 0 0 7.962 1H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2z"></path>', color: 'var(--accent-secondary)' },
+          { name: 'Network', svg: '<rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6" y2="6"></line><line x1="6" y1="18" x2="6" y2="18"></line>' },
+          { name: 'Compute', svg: '<rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line>' },
+          { name: 'Alert', svg: '<polygon points="12 2 2 22 22 22 12 2"></polygon><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>', color: 'var(--danger)' },
+          { name: 'Storage', svg: '<path d="M21 5v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"></path><path d="M3 9h18"></path><path d="M3 15h18"></path>' },
+          { name: 'Security', svg: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>', color: 'var(--accent-primary)' },
+          { name: 'Web', svg: '<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>' },
+          { name: 'SRE', svg: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>', color: 'var(--accent-secondary)' }
+        ];
+        saveConfig(config);
       }
       
-      // Always try to initialize examples in the first source if available
-      // REMOVED for user-controlled flow
-      // if (config.sources.length > 0) {
-      //    initializeExampleRunbooks(config.sources[0]);
-      // }
-
       return config;
     }
   } catch (e) {
     console.error("Failed to read config", e);
   }
-  // Default first run - Do NOT auto-install anymore
-  // initializeExampleRunbooks(DEFAULT_DOCS_DIR);
-  return { sources: [DEFAULT_DOCS_DIR], firstRunComplete: false };
+  return { 
+    sources: [DEFAULT_DOCS_DIR], 
+    firstRunComplete: false, 
+    owners: ['Admin', 'Dev', 'Security', 'SRE'],
+    categories: [
+      { name: 'Database', svg: '<path d="M7 21h10a2 2 0 0 0 2-2V9.437a2 2 0 0 0-.611-1.432l-9.009-9.009A2 2 0 0 0 7.962 1H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2z"></path>', color: 'var(--accent-secondary)' },
+      { name: 'Network', svg: '<rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6" y2="6"></line><line x1="6" y1="18" x2="6" y2="18"></line>' },
+      { name: 'Compute', svg: '<rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line>' },
+      { name: 'Alert', svg: '<polygon points="12 2 2 22 22 22 12 2"></polygon><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>', color: 'var(--danger)' }
+    ]
+  };
 }
 
 // Helper to save configuration
@@ -186,6 +242,27 @@ function ensureSourcesExist(sources: string[]) {
       }
     }
   });
+}
+
+// Helper to scan for all files matching criteria recursively
+function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
+    const files = fs.readdirSync(dirPath);
+
+    files.forEach((file) => {
+        const fullPath = path.join(dirPath, file);
+        if (fs.statSync(fullPath).isDirectory()) {
+            // Skip system/meta directories
+            if (file !== '.git' && file !== 'node_modules' && file !== 'dist' && file !== 'build') {
+                getAllFiles(fullPath, arrayOfFiles);
+            }
+        } else {
+            if (file.toLowerCase().endsWith('.md')) {
+                arrayOfFiles.push(fullPath);
+            }
+        }
+    });
+
+    return arrayOfFiles;
 }
 
 // Initializer for Example Runbooks (Renamed/Refactored)
@@ -229,25 +306,23 @@ function installExamples(targetDir: string): { success: boolean; count: number; 
 
 function parseRunbookFile(filePath: string): QRun | null {
   try {
-    const ext = path.extname(filePath).toLowerCase();
     const content = fs.readFileSync(filePath, 'utf-8');
     let data: Partial<QRun> = {};
 
-    if (ext === '.json') {
-      data = JSON.parse(content);
-      data.format = 'json';
-    } else if (ext === '.md') {
+    const ext = path.extname(filePath).toLowerCase();
+    if (ext === '.md') {
       const parsed = matter(content);
       data = parsed.data;
-      data.format = 'md';
       
       // Parse MarkDown Body to Steps if not in frontmatter
       if (!data.steps) {
         data.steps = parseMarkdownSteps(parsed.content);
       }
+    } else {
+      return null; // Ignore non-markdown
     }
 
-    if (!data.id) return null;
+    /* if (!data.id) return null; */
 
     // --- Validation & Defaults ---
     data.sourcePath = path.dirname(filePath);
@@ -268,13 +343,11 @@ function parseRunbookFile(filePath: string): QRun | null {
     }
 
     // Type: Strict check
-    if (data.type !== 'qrun') {
+    const validTypes = ['qrun', 'quick-runbook', 'quick-runbooks', 'runbooks', 'runbook'];
+    const lowerType = String(data.type || '').toLowerCase();
+    
+    if (!validTypes.includes(lowerType)) {
         // If it's missing or wrong, return null (strict filter)
-        // OR: for migration, we could default it?
-        // User said: "if there other 'types' remove them".
-        // Implies we only want "qrun".
-        // Note: Existing files might fail this check until updated.
-        // We will update files next.
          return null; 
     }
 
@@ -311,9 +384,25 @@ function parseMarkdownSteps(content: string): QRunStep[] {
       if (currentStep) steps.push(currentStep);
       currentStep = { title: line.replace('## ', '').trim(), content: [] };
     } else if (currentStep) {
-      // Check for code block start/end
-       // Simplistic parser for now - assumes standard blocks
-       if (line.trim().startsWith('```')) {
+      // Check for metadata
+      const ownershipMatch = line.match(/^Ownership:\s*(.*)$/i);
+      const expectedMatch = line.match(/^Expected:\s*(.*)$/i);
+      const timeMatch = line.match(/^Time:\s*(.*)$/i);
+
+      if (ownershipMatch) {
+          currentStep.ownership = ownershipMatch[1].trim();
+      } else if (expectedMatch) {
+          // Migration: convert to content block
+          currentStep.content.push({ type: 'expected', text: expectedMatch[1].trim() });
+      } else if (timeMatch) {
+          currentStep.timeEstimation = timeMatch[1].trim();
+      } else if (line.trim().match(/^!\[(.*)\]\((.*)\)$/)) {
+          const match = line.trim().match(/^!\[(.*)\]\((.*)\)$/);
+          if (match) {
+              currentStep.content.push({ type: 'image', alt: match[1], path: match[2] });
+          }
+      } else if (line.trim().startsWith('```')) {
+          // Check for code block start/end
            const lang = line.trim().replace('```', '');
            if (lang) {
                currentStep.content.push({ type: 'code', language: lang, code: '' });
@@ -359,7 +448,8 @@ function parseMarkdownSteps(content: string): QRunStep[] {
 }
 
 function serializeToMarkdown(runbook: QRun): string {
-    const { steps, sourcePath, format, ...meta } = runbook;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { steps, sourcePath: _, ...meta } = runbook;
     // Don't save steps in frontmatter
     const frontmatter = { ...meta };
     
@@ -367,14 +457,22 @@ function serializeToMarkdown(runbook: QRun): string {
     if (steps && steps.length > 0) {
         body = steps.map((s: QRunStep) => {
             let stepContent = `## ${s.title}\n\n`;
+            if (s.ownership) stepContent += `Ownership: ${s.ownership}\n`;
+            if (s.timeEstimation) stepContent += `Time: ${s.timeEstimation}\n`;
+            if (s.ownership || s.timeEstimation) stepContent += '\n';
+
             s.content.forEach((c) => {
-                if (c.type === 'code') {
+                if (c.type === 'image') {
+                    stepContent += `![${c.alt || ''}](${c.path})\n\n`;
+                } else if (c.type === 'code') {
                     stepContent += '```' + (c.language || '') + '\n' + c.code + '\n```\n\n';
                 } else if (c.type === 'list') {
                      c.items.forEach((it: string) => stepContent += `- ${it}\n`);
                      stepContent += '\n';
-                } else {
-                    stepContent += c.text + '\n\n';
+                } else if (c.type === 'text') {
+                    stepContent += (c as any).text + '\n\n';
+                } else if (c.type === 'expected') {
+                    stepContent += `Expected: ${c.text}\n\n`;
                 }
             });
             return stepContent;
@@ -425,15 +523,22 @@ ipcMain.handle('get-runbooks', async () => {
     const sources = config.sources;
     ensureSourcesExist(sources);
     
-    let allRunbooks: QRun[] = [];
+    const REPOS_DIR = path.join(app.getPath('documents'), 'QuickRunbooks', 'Repos');
+    const allRunbooks: QRun[] = [];
 
     sources.forEach((dir: string) => {
         if (fs.existsSync(dir)) {
-            const files = fs.readdirSync(dir);
-            files.forEach(file => {
-                if (file.endsWith('.json') || file.endsWith('.md')) {
-                    const rb = parseRunbookFile(path.join(dir, file));
-                    if (rb) allRunbooks.push(rb);
+            // Check if this source directory is INSIDE the managed Repos directory
+            const isManagedRepo = dir.toLowerCase().startsWith(REPOS_DIR.toLowerCase());
+            
+            const files = getAllFiles(dir);
+            files.forEach(filePath => {
+                const rb = parseRunbookFile(filePath);
+                if (rb) {
+                    rb.readonly = isManagedRepo;
+                    // SourcePath is the directory of the file (for relative assets)
+                    rb.sourcePath = path.dirname(filePath); 
+                    allRunbooks.push(rb);
                 }
             });
         }
@@ -454,20 +559,8 @@ ipcMain.handle('save-runbook', async (_, runbook: QRun) => {
     const targetDir = runbook.sourcePath || config.sources[0]; 
     if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
 
-    let filePath;
-    let content;
-
-    // Determine format
-    if (runbook.format === 'md') {
-        filePath = path.join(targetDir, `${runbook.id}.md`);
-        content = serializeToMarkdown(runbook);
-    } else {
-        // Default to JSON
-        filePath = path.join(targetDir, `${runbook.id}.json`);
-        // Clean up internal non-persistent props
-        const { sourcePath, format, ...cleanRunbook } = runbook;
-        content = JSON.stringify(cleanRunbook, null, 2);
-    }
+    const filePath = path.join(targetDir, `${runbook.id}.md`);
+    const content = serializeToMarkdown(runbook);
 
     fs.writeFileSync(filePath, content, 'utf-8');
     return { success: true };
@@ -480,21 +573,21 @@ ipcMain.handle('save-runbook', async (_, runbook: QRun) => {
 // Delete runbook
 ipcMain.handle('delete-runbook', async (_, runbook: QRun) => {
   try {
+    if (runbook.readonly) {
+        return { success: false, error: "Cannot delete a runbook that is part of a repository." };
+    }
     // We need the full object or at least source/format/id to delete correct file
     const config = getConfig();
     // Fallback search if sourcePath missing (inefficient but safe)
     let targetFile = '';
     
     if (runbook.sourcePath) {
-        const ext = runbook.format === 'md' ? '.md' : '.json';
-        targetFile = path.join(runbook.sourcePath, `${runbook.id}${ext}`);
+        targetFile = path.join(runbook.sourcePath, `${runbook.id}.md`);
     } else {
         // Search
          const sources = config.sources;
          for (const dir of sources) {
-             const jsonPath = path.join(dir, `${runbook.id}.json`);
              const mdPath = path.join(dir, `${runbook.id}.md`);
-             if (fs.existsSync(jsonPath)) { targetFile = jsonPath; break; }
              if (fs.existsSync(mdPath)) { targetFile = mdPath; break; }
          }
     }
@@ -546,7 +639,7 @@ ipcMain.handle('clone-repository', async (_, url, options = {}) => {
             
             // Shallow clone for speed
             let command = `git clone --depth 1 "${url}" "${targetDir}"`;
-            let execOptions: any = {
+            let execOptions: { env: Record<string, string | undefined>; timeout: number } = {
                 env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
                 timeout: 30000 
             };
@@ -580,19 +673,21 @@ ipcMain.handle('clone-repository', async (_, url, options = {}) => {
                 }
 
                 if (success) {
-                    // VALIDATION: Must have 'qrun' folder
+                    // VALIDATION: Prefer 'qrun' folder, but allow root if missing
+                    let effectiveSource = targetDir;
                     const qrunPath = path.join(targetDir, 'qrun');
-                    if (!fs.existsSync(qrunPath)) {
-                        // Cleanup
-                        try { fs.rmSync(targetDir, { recursive: true, force: true }); } catch (e) { console.error("Cleanup failed", e); }
-                        resolve({ success: false, error: "Repository does not contain a 'qrun' folder." });
-                        return;
+                    
+                    if (fs.existsSync(qrunPath) && fs.statSync(qrunPath).isDirectory()) {
+                        effectiveSource = qrunPath;
+                        console.log(`[Clone] Using 'qrun' subfolder as source: ${effectiveSource}`);
+                    } else {
+                        console.log(`[Clone] 'qrun' subfolder not found. Using root as source: ${effectiveSource}`);
                     }
 
-                    // Success - Add to sources (pointing to qrun subfolder)
+                    // Success - Add to sources
                     const config = getConfig();
-                    if (!config.sources.includes(qrunPath)) {
-                        config.sources.push(qrunPath);
+                    if (!config.sources.includes(effectiveSource)) {
+                        config.sources.push(effectiveSource);
                         saveConfig(config);
                     }
                     resolve({ success: true, sources: config.sources });
@@ -694,9 +789,17 @@ type: qrun
 
 ## 1. Step One
 
+Ownership: Admin
+Expected: System Ready
+Time: 5m
+
 Description of step one.
 
 ## 2. Step Two
+
+Ownership: Admin
+Expected: Process Verified
+Time: 10m
 
 Description of step two.
 
@@ -733,41 +836,19 @@ Description of step nine.
 Description of step ten.
 `;
 
-const TEMPLATE_JSON = `{
-  "id": "new-runbook",
-  "title": "New Runbook",
-  "service": "IAAS",
-  "category": "Compute",
-  "tags": ["tag1", "tag2"],
-  "shortDescription": "A short description.",
-  "fullDescription": "A full description.",
-  "type": "qrun",
-  "steps": [
-     { "title": "1. Step One", "content": [{ "type": "text", "text": "Content here" }] },
-     { "title": "2. Step Two", "content": [{ "type": "text", "text": "Content here" }] },
-     { "title": "3. Step Three", "content": [{ "type": "text", "text": "Content here" }] },
-     { "title": "4. Step Four", "content": [{ "type": "text", "text": "Content here" }] },
-     { "title": "5. Step Five", "content": [{ "type": "text", "text": "Content here" }] },
-     { "title": "6. Step Six", "content": [{ "type": "text", "text": "Content here" }] },
-     { "title": "7. Step Seven", "content": [{ "type": "text", "text": "Content here" }] },
-     { "title": "8. Step Eight", "content": [{ "type": "text", "text": "Content here" }] },
-     { "title": "9. Step Nine", "content": [{ "type": "text", "text": "Content here" }] },
-     { "title": "10. Step Ten", "content": [{ "type": "text", "text": "Content here" }] }
-  ]
-}`;
 
-ipcMain.handle('download-template', async (_, format: 'json' | 'md') => {
+ipcMain.handle('download-template', async () => {
     if (!win) return { success: false, error: "No window" };
     
     try {
-        const defaultName = format === 'md' ? 'template.md' : 'template.json';
-        const content = format === 'md' ? TEMPLATE_MD : TEMPLATE_JSON;
+        const defaultName = 'template.md';
+        const content = TEMPLATE_MD;
 
         const { filePath } = await dialog.showSaveDialog(win, {
             title: 'Download Template',
             defaultPath: defaultName,
             filters: [
-                { name: format === 'md' ? 'Markdown' : 'JSON', extensions: [format] }
+                { name: 'Markdown', extensions: ['md'] }
             ]
         });
 
@@ -891,6 +972,38 @@ ipcMain.handle('import-file', async () => {
             return { success: true };
         }
         return { success: false, error: "Canceled" };
+    } catch (e) {
+        return { success: false, error: (e as Error).message };
+    }
+});
+ipcMain.handle('qrun:pick-image', async (_, targetDir: string) => {
+    if (!win) return { success: false, error: "No window" };
+    
+    try {
+        const { filePaths } = await dialog.showOpenDialog(win, {
+            title: 'Pick an image',
+            filters: [
+                { name: 'Images', extensions: ['jpg', 'png', 'gif', 'webp', 'jpeg'] }
+            ],
+            properties: ['openFile']
+        });
+
+        if (filePaths && filePaths.length > 0) {
+            const srcPath = filePaths[0];
+            const assetsDir = path.join(targetDir, 'assets');
+            
+            if (!fs.existsSync(assetsDir)) {
+                fs.mkdirSync(assetsDir, { recursive: true });
+            }
+
+            const fileName = `${Date.now()}-${path.basename(srcPath)}`;
+            const destPath = path.join(assetsDir, fileName);
+            const relativePath = `assets/${fileName}`;
+
+            fs.copyFileSync(srcPath, destPath);
+            return { success: true, path: relativePath };
+        }
+        return { success: false, error: "No image selected" };
     } catch (e) {
         return { success: false, error: (e as Error).message };
     }
