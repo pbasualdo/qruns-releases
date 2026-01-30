@@ -976,7 +976,7 @@ ipcMain.handle('import-file', async () => {
     if (!parent) return { success: false, error: "No window found" };
     
     try {
-        const { canceled, filePaths } = await dialog.showOpenDialog(parent, {
+        const { canceled: _canceled, filePaths } = await dialog.showOpenDialog(parent, {
             filters: [{ name: 'Runbooks', extensions: ['json', 'md'] }],
             properties: ['openFile']
         });
@@ -1018,7 +1018,7 @@ ipcMain.handle('qrun:pick-image', async (_, targetDir: string) => {
     if (!parent) return { success: false, error: "No window" };
     
     try {
-        const { canceled, filePaths } = await dialog.showOpenDialog(parent, {
+        const { canceled: _canceled, filePaths } = await dialog.showOpenDialog(parent, {
             title: 'Pick an image',
             filters: [
                 { name: 'Images', extensions: ['jpg', 'png', 'gif', 'webp', 'jpeg'] }
