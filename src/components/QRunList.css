@@ -662,17 +662,116 @@
     font-weight: 700;
 }
 
-.step-image-block img {
+.step-image-block {
     margin-top: 1rem;
-    max-width: 100%;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    transition: transform 0.2s;
 }
 
-.step-image-block img:hover {
-    transform: scale(1.01);
+.image-thumbnail-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 300px;
+    max-width: 100%;
+    min-height: 150px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--bg-tertiary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.image-thumbnail-wrapper:hover {
+    transform: translateY(-2px) scale(1.02);
+    border-color: var(--accent-primary);
+}
+
+.image-thumbnail {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 150px;
+    object-fit: contain;
+    background: var(--bg-secondary);
+    border: 1px dashed var(--border-color);
+}
+
+.image-overlay-hint {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.image-thumbnail-wrapper:hover .image-overlay-hint {
+    opacity: 1;
+}
+
+/* --- Image Lightbox --- */
+.image-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.lightbox-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.lightbox-img {
+    max-width: 100%;
+    max-height: 80vh;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    object-fit: contain;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 2.5rem;
+    cursor: pointer;
+    line-height: 1;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.lightbox-close:hover {
+    opacity: 1;
+}
+
+.lightbox-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .step-expected-block {
@@ -689,4 +788,64 @@
     font-weight: 600;
     color: var(--accent-primary);
     margin-right: 0.5rem;
+}
+
+/* --- Code Blocks & Copy Button --- */
+.code-block {
+    margin: 1rem 0;
+    background: #0d1117;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.lang-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+}
+
+.copy-btn {
+    font-size: 0.65rem !important;
+    padding: 2px 6px !important;
+    height: 20px !important;
+    min-height: auto !important;
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-secondary) !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    transition: all 0.2s;
+}
+
+.copy-btn:hover {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--accent-primary) !important;
+}
+
+.copy-btn:active {
+    transform: scale(0.95);
+}
+
+.code-block pre {
+    margin: 0;
+    padding: 1rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #e6edf3;
 }

@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net } from 'electron'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs'
 import { exec } from 'node:child_process'
@@ -128,31 +128,37 @@ app.whenReady().then(() => {
     protocol.handle('qrun-asset', async (request) => {
         try {
             const urlString = request.url;
-            // On Windows, qrun-asset://C:/... -> url.pathname is /C:/...
-            // or even qrun-asset:C:/... depending on how it's called.
-            // A more robust way to extract the path:
-            let pathPart = urlString.replace(/^qrun-asset:\/+/i, '');
+            console.log(`[Protocol] Raw request: ${urlString}`);
             
-            // Re-normalize path
+            // 1. Get everything after the scheme and colon, then remove any leading slashes
+            let pathPart = urlString.substring(urlString.indexOf(':') + 1).replace(/^\/+/, '');
+            
+            // 2. Decode segments (e.g. %20 -> space)
             let filePath = decodeURIComponent(pathPart);
             
-            // If it starts with a drive letter C:/... but has no leading slash, it's good.
-            // If it starts with /C:/..., remove the leading slash.
-            if (process.platform === 'win32' && filePath.startsWith('/')) {
-                filePath = filePath.slice(1);
+            // 3. Robust Windows Drive Handling
+            if (process.platform === 'win32') {
+                // If we have "C/path" or "c/path" (missing colon due to being seen as host), re-add it
+                if (!/^[a-zA-Z]:/.test(filePath) && /^[a-zA-Z](\/|\\)/.test(filePath)) {
+                    filePath = filePath[0] + ':' + filePath.slice(1);
+                }
+                // Normalize slashes for Windows
+                filePath = filePath.replace(/\//g, path.sep);
             }
 
-            // Ensure absolute and normalized
+            // 4. Ensure normalized
             filePath = path.normalize(filePath);
             
-            console.log(`[Protocol] Loading asset: ${filePath}`);
+            console.log(`[Protocol] Final Resolved Path: ${filePath}`);
             
             if (fs.existsSync(filePath)) {
-                return net.fetch(`file:///${filePath.replace(/\\/g, '/')}`);
+                return net.fetch(pathToFileURL(filePath).toString());
             }
+            
+            console.error(`[Protocol] File NOT found: ${filePath}`);
             return new Response('Not Found', { status: 404 });
         } catch (e) {
-            console.error('[Protocol] Error:', e);
+            console.error('[Protocol] Error handling request:', e);
             return new Response('Internal Error', { status: 500 });
         }
     });

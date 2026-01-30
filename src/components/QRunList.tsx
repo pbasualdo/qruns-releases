@@ -7,6 +7,22 @@ import './QRunList.css';
 import { SettingsModal } from './SettingsModal';
 import { HelpModal } from './HelpModal';
 
+// PrismJS imports
+import Prism from 'prismjs';
+import './prism-theme.css';
+
+// Import necessary languages for Prism
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-sql';
+import 'prismjs/components/prism-powershell';
+import 'prismjs/components/prism-yaml';
+import 'prismjs/components/prism-json';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-markdown';
+import 'prismjs/components/prism-markup'; // For XML
+
 export const QRunList: React.FC = () => {
     const { theme, toggleTheme, accent, setAccent, viewMode, setViewMode, uiScale } = useTheme();
     
@@ -19,6 +35,7 @@ export const QRunList: React.FC = () => {
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
     const [isHelpOpen, setIsHelpOpen] = useState(false);
+    const [expandedImage, setExpandedImage] = useState<string | null>(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [categories, setCategories] = useState<CategoryConfig[]>([]);
   const [availableSources, setAvailableSources] = useState<string[]>([]);
@@ -40,7 +57,9 @@ export const QRunList: React.FC = () => {
         if (contentRef.current) {
             contentRef.current.scrollTop = 0;
         }
-    }, [selectedRunId]);
+        // Apply syntax highlighting
+        Prism.highlightAll();
+    }, [selectedRunId, isEditing]);
 
     React.useEffect(() => {
         if (window.electronAPI) {
@@ -127,8 +146,12 @@ export const QRunList: React.FC = () => {
     return matchFilter && matchSearch && matchTag;
   });
 
-  const selectedRun = runbooks.find(r => r.id === selectedRunId);
-  const uniqueTags = Array.from(new Set(runbooks.flatMap(r => r.tags || []))).sort();
+  const selectedRun = filteredRuns.find(r => r.id === selectedRunId);
+  const uniqueTags = Array.from(new Set(
+    runbooks
+      .filter(r => activeFilter === 'ALL' || (r.service || 'IAAS') === activeFilter)
+      .flatMap(r => r.tags || [])
+  )).sort();
 
   // -- Handlers --
   const handleCreate = () => {
@@ -215,7 +238,11 @@ export const QRunList: React.FC = () => {
               <span className="lang-badge">{content.language.toUpperCase()}</span>
               <button className="copy-btn" onClick={() => navigator.clipboard.writeText(content.code)}>Copy</button>
             </div>
-            <pre><code>{content.code}</code></pre>
+            <pre className={`language-${content.language.toLowerCase()}`}>
+              <code className={`language-${content.language.toLowerCase()}`}>
+                {content.code}
+              </code>
+            </pre>
           </div>
         );
       case 'list':
@@ -226,17 +253,17 @@ export const QRunList: React.FC = () => {
         const fullPath = content.path.startsWith('http') ? content.path : `qrun-asset:///${normalizedSource}/${content.path}`;
         return (
           <div key={idx} className="step-image-block mb-1">
-            <img 
-              src={fullPath} 
-              alt={content.alt} 
-              onClick={() => {
-                  if (fullPath.startsWith('file://')) {
-                      // Optionally handle local file opening differently if needed, 
-                      // but window.open works for file:// in most electron setups if permitted.
-                  }
-                  window.open(fullPath);
-              }}
-            />
+            <div className="image-thumbnail-wrapper">
+              <img 
+                src={fullPath} 
+                alt={content.alt} 
+                className="image-thumbnail"
+                onClick={() => setExpandedImage(fullPath)}
+              />
+              <div className="image-overlay-hint" onClick={() => setExpandedImage(fullPath)}>
+                <span>Click to expand</span>
+              </div>
+            </div>
           </div>
         );
       }
@@ -355,9 +382,9 @@ export const QRunList: React.FC = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                />
                <div className="filter-row">
-                  <button className={`filter-btn ${activeFilter === 'ALL' ? 'active' : ''}`} onClick={() => setActiveFilter('ALL')}>ALL</button>
-                  <button className={`filter-btn ${activeFilter === 'IAAS' ? 'active' : ''}`} onClick={() => setActiveFilter('IAAS')}>IAAS</button>
-                  <button className={`filter-btn ${activeFilter === 'PAAS' ? 'active' : ''}`} onClick={() => setActiveFilter('PAAS')}>PAAS</button>
+                  <button className={`filter-btn ${activeFilter === 'ALL' ? 'active' : ''}`} onClick={() => { setActiveFilter('ALL'); setSelectedTag(null); }}>ALL</button>
+                  <button className={`filter-btn ${activeFilter === 'IAAS' ? 'active' : ''}`} onClick={() => { setActiveFilter('IAAS'); setSelectedTag(null); }}>IAAS</button>
+                  <button className={`filter-btn ${activeFilter === 'PAAS' ? 'active' : ''}`} onClick={() => { setActiveFilter('PAAS'); setSelectedTag(null); }}>PAAS</button>
                   <button className="filter-btn create-btn" onClick={handleCreate} title="Create New">+</button>
                    <button 
                     className="filter-btn" 
@@ -598,6 +625,23 @@ export const QRunList: React.FC = () => {
             )}
          </main>
       </div>
+      {/* Image Lightbox */}
+      {expandedImage && (
+        <div className="image-lightbox" onClick={() => setExpandedImage(null)}>
+          <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <img src={expandedImage} alt="Expanded view" className="lightbox-img" />
+            <button className="lightbox-close" onClick={() => setExpandedImage(null)}>×</button>
+            <div className="lightbox-actions">
+              <button 
+                className="btn btn-secondary btn-small" 
+                onClick={() => window.open(expandedImage)}
+              >
+                Open in new window
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

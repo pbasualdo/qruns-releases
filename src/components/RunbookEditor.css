@@ -286,3 +286,58 @@
     border-color: var(--accent-primary);
     color: var(--accent-primary);
 }
+
+/* -- Code Block Improvements -- */
+.code-block-header-editor {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.lang-selector-mini {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    text-transform: uppercase;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.lang-selector-mini:hover {
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+}
+
+.copy-btn-preview {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-tertiary);
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.code-textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: inherit;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.5;
+}
+
+.code-textarea:focus {
+    outline: none;
+}

@@ -11,6 +11,8 @@ interface RunbookEditorProps {
   sources?: string[];
 }
 
+const LANGUAGES = ['BASH', 'SQL', 'POWERSHELL', 'YAML', 'JSON', 'PYTHON', 'JAVASCRIPT', 'TYPESCRIPT', 'MARKDOWN', 'XML'];
+
 export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSave, onCancel, onDelete, sources = [] }) => {
   const [formData, setFormData] = useState<Partial<QRun>>(() => {
     const defaults = {
@@ -102,7 +104,7 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
       ? { type: 'text' as const, text: '' }
       : type === 'expected'
       ? { type: 'expected' as const, text: '' }
-      : { type: 'code' as const, language: 'sql', code: '' };
+      : { type: 'code' as const, language: 'BASH', code: '' };
     
     newSteps[stepIndex] = {
       ...newSteps[stepIndex],
@@ -111,7 +113,7 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
     setFormData(prev => ({ ...prev, steps: newSteps }));
   };
 
-  const updateStepContent = (stepIndex: number, contentIndex: number, value: string, field: 'text' | 'code' = 'text') => {
+  const updateStepContent = (stepIndex: number, contentIndex: number, value: string, field: 'text' | 'code' | 'language' = 'text') => {
     const newSteps = [...(formData.steps || [])];
     const item = newSteps[stepIndex].content[contentIndex];
     
@@ -346,20 +348,47 @@ export const RunbookEditor: React.FC<RunbookEditorProps> = ({ initialData, onSav
                                             />
                                     ) : content.type === 'code' ? (
                                         <div className="step-block-code">
+                                            <div className="code-block-header-editor">
+                                                <select 
+                                                    className="lang-selector-mini"
+                                                    title="Select Code Language"
+                                                    value={content.language}
+                                                    onChange={(e) => updateStepContent(sIdx, cIdx, e.target.value, 'language')}
+                                                >
+                                                    {LANGUAGES.map(lang => (
+                                                        <option key={lang} value={lang}>{lang}</option>
+                                                    ))}
+                                                    {!LANGUAGES.includes(content.language?.toUpperCase() || '') && content.language && (
+                                                        <option value={content.language}>{content.language.toUpperCase()}</option>
+                                                    )}
+                                                </select>
+                                                <button 
+                                                    className="copy-btn-preview" 
+                                                    disabled
+                                                    style={{ opacity: 0.5, cursor: 'default' }}
+                                                >
+                                                    Preview
+                                                </button>
+                                            </div>
                                             <textarea 
                                                 className="code-textarea"
                                                 value={content.code}
                                                 onChange={(e) => updateStepContent(sIdx, cIdx, e.target.value, 'code')}
-                                                placeholder="SELECT * FROM..."
+                                                placeholder="Enter code here..."
                                             />
                                         </div>
                                     ) : content.type === 'image' ? (
-                                        <div className="step-block-image" style={{ marginBottom: '1rem' }}>
-                                            <img 
-                                                src={`qrun-asset:///${(formData.sourcePath || targetSource).replace(/\\/g, '/')}/${content.path}`} 
-                                                alt={content.alt} 
-                                                style={{ maxWidth: '100%', borderRadius: '4px', border: '1px solid var(--border-color)' }}
-                                            />
+                                        <div className="step-block-image mb-1">
+                                            <div className="image-thumbnail-wrapper">
+                                                <img 
+                                                    src={content.path.startsWith('http') ? content.path : `qrun-asset:///${(formData.sourcePath || targetSource).replace(/\\/g, '/')}/${content.path}`} 
+                                                    alt={content.alt} 
+                                                    className="image-thumbnail"
+                                                />
+                                                <div className="image-overlay-hint">
+                                                    <span>Preview</span>
+                                                </div>
+                                            </div>
                                             <input 
                                                 type="text"
                                                 className="meta-input-mini"
